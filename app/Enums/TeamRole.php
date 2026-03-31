@@ -6,6 +6,11 @@ enum TeamRole: string
 {
     case Owner = 'owner';
     case Admin = 'admin';
+    case Principal = 'principal';
+    case HoD = 'hod';
+    case Admission = 'admission';
+    case Accounts = 'accounts';
+    case Faculty = 'faculty';
     case Member = 'member';
 
     /**
@@ -13,7 +18,11 @@ enum TeamRole: string
      */
     public function label(): string
     {
-        return ucfirst($this->value);
+        return match ($this) {
+            self::HoD => 'Head of Department',
+            self::Accounts => 'Accounts',
+            default => ucfirst($this->value),
+        };
     }
 
     /**
@@ -24,7 +33,7 @@ enum TeamRole: string
     public function permissions(): array
     {
         return match ($this) {
-            self::Owner => [
+            self::Owner, self::Principal => [
                 'team:update',
                 'team:delete',
                 'member:add',
@@ -32,13 +41,23 @@ enum TeamRole: string
                 'member:remove',
                 'invitation:create',
                 'invitation:cancel',
+                'settings:manage',
             ],
-            self::Admin => [
+            self::Admin, self::HoD => [
                 'team:update',
+                'member:add',
                 'invitation:create',
                 'invitation:cancel',
             ],
-            self::Member => [],
+            self::Admission => [
+                'student:manage',
+                'admission:process',
+            ],
+            self::Accounts => [
+                'fee:manage',
+                'payment:collect',
+            ],
+            self::Faculty, self::Member => [],
         };
     }
 
@@ -57,8 +76,13 @@ enum TeamRole: string
     public function level(): int
     {
         return match ($this) {
-            self::Owner => 3,
-            self::Admin => 2,
+            self::Owner => 10,
+            self::Principal => 9,
+            self::Admin => 8,
+            self::HoD => 7,
+            self::Admission => 5,
+            self::Accounts => 5,
+            self::Faculty => 3,
             self::Member => 1,
         };
     }

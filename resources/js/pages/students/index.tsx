@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Plus, Search, MoreHorizontal, User, Mail, PenSquare } from 'lucide-react';
-import { create } from '@/routes/students';
+import { create, index } from '@/routes/students';
 import { dashboard } from '@/routes';
 
 interface StudentData {
@@ -177,7 +177,7 @@ export default function StudentsIndex({ students }: StudentsProps) {
                                 )}
                             </TableBody>
                         </Table>
-                        
+
                         {/* Pagination Footer */}
                         {students?.last_page > 1 && (
                             <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-white/5">
@@ -199,7 +199,6 @@ export default function StudentsIndex({ students }: StudentsProps) {
 
 StudentsIndex.layout = (props: { currentTeam?: { slug: string } | null }) => ({
     breadcrumbs: [
-        { title: 'Dashboard', href: props.currentTeam ? dashboard().url : '/' },
-        { title: 'Students', href: '#' },
+        { title: 'Students', href: index.url() },
     ],
 });

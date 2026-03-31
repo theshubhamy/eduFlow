@@ -7,9 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AppLayout from '@/layouts/app-layout';
 import { CreditCard, Plus, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { dashboard } from '@/routes';
 
 interface Category {
     id: string;
@@ -49,7 +49,7 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
 
     const handleCreateCategory = (e: React.FormEvent) => {
         e.preventDefault();
-        categoryForm.post(createCategory.url({ current_team: team }), {
+        categoryForm.post(createCategory.url(), {
             onSuccess: () => {
                 categoryForm.reset();
                 toast.success('Fee category created successfully');
@@ -59,7 +59,7 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
 
     const handleAllocate = (e: React.FormEvent) => {
         e.preventDefault();
-        allocationForm.post(allocate.url({ current_team: team }), {
+        allocationForm.post(allocate.url(), {
             onSuccess: () => {
                 allocationForm.reset();
                 toast.success('Fee allocated successfully');
@@ -68,7 +68,7 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
     };
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Fee Management', href: '/fees' }]}>
+        < >
             <Head title="Fee Management" />
 
             <div className="container mx-auto p-6 space-y-8">
@@ -99,26 +99,26 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
                                     <form onSubmit={handleCreateCategory} className="space-y-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="name">Name</Label>
-                                            <Input 
-                                                id="name" 
-                                                value={categoryForm.data.name} 
-                                                onChange={e => categoryForm.setData('name', e.target.value)} 
+                                            <Input
+                                                id="name"
+                                                value={categoryForm.data.name}
+                                                onChange={e => categoryForm.setData('name', e.target.value)}
                                                 placeholder="e.g. Monthly Tuition"
                                             />
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="amount">Amount ($)</Label>
-                                            <Input 
-                                                id="amount" 
-                                                type="number" 
-                                                value={categoryForm.data.amount} 
-                                                onChange={e => categoryForm.setData('amount', e.target.value)} 
+                                            <Input
+                                                id="amount"
+                                                type="number"
+                                                value={categoryForm.data.amount}
+                                                onChange={e => categoryForm.setData('amount', e.target.value)}
                                                 placeholder="0.00"
                                             />
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="periodicity">Periodicity</Label>
-                                            <Select 
+                                            <Select
                                                 onValueChange={value => categoryForm.setData('periodicity', value)}
                                                 defaultValue={categoryForm.data.periodicity}
                                             >
@@ -134,10 +134,10 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="description">Description (Optional)</Label>
-                                            <Input 
-                                                id="description" 
-                                                value={categoryForm.data.description} 
-                                                onChange={e => categoryForm.setData('description', e.target.value)} 
+                                            <Input
+                                                id="description"
+                                                value={categoryForm.data.description}
+                                                onChange={e => categoryForm.setData('description', e.target.value)}
                                             />
                                         </div>
                                         <Button type="submit" className="w-full" disabled={categoryForm.processing}>
@@ -184,7 +184,7 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
                     </TabsContent>
 
                     <TabsContent value="allocations" className="space-y-6">
-                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <Card className="lg:col-span-1">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
@@ -197,7 +197,7 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
                                     <form onSubmit={handleAllocate} className="space-y-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="cat_id">Fee Category</Label>
-                                            <Select 
+                                            <Select
                                                 onValueChange={value => allocationForm.setData('fee_category_id', value)}
                                             >
                                                 <SelectTrigger>
@@ -214,20 +214,20 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label htmlFor="start">Start Date</Label>
-                                                <Input 
-                                                    id="start" 
-                                                    type="date" 
-                                                    value={allocationForm.data.start_date} 
-                                                    onChange={e => allocationForm.setData('start_date', e.target.value)} 
+                                                <Input
+                                                    id="start"
+                                                    type="date"
+                                                    value={allocationForm.data.start_date}
+                                                    onChange={e => allocationForm.setData('start_date', e.target.value)}
                                                 />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="end">End Date</Label>
-                                                <Input 
-                                                    id="end" 
-                                                    type="date" 
-                                                    value={allocationForm.data.end_date} 
-                                                    onChange={e => allocationForm.setData('end_date', e.target.value)} 
+                                                <Input
+                                                    id="end"
+                                                    type="date"
+                                                    value={allocationForm.data.end_date}
+                                                    onChange={e => allocationForm.setData('end_date', e.target.value)}
                                                 />
                                             </div>
                                         </div>
@@ -244,7 +244,7 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
                                     <CardDescription>Fees currently assigned to students or classes.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                     <Table>
+                                    <Table>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Category</TableHead>
@@ -279,6 +279,11 @@ export default function FeeIndex({ categories, allocations }: { categories: Cate
                     </TabsContent>
                 </Tabs>
             </div>
-        </AppLayout>
+        </>
     );
 }
+FeeIndex.layout = (props: { currentTeam?: { slug: string } | null }) => ({
+    breadcrumbs: [
+        { title: 'Fees', href: index.url() },
+    ],
+});

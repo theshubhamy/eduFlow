@@ -13,13 +13,20 @@ Route::middleware(['auth', 'verified', EnsureTeamMembership::class])
     ->group(function () {
         Route::inertia('dashboard', 'dashboard')->name('dashboard');
         
+        // Staff & Members
+        Route::get('members', [App\Http\Controllers\Academic\MemberController::class, 'index'])->name('members.index');
+        
         // Students & Admission
         Route::get('students', [App\Http\Controllers\Academic\AdmissionController::class, 'index'])->name('students.index');
         Route::get('students/create', [App\Http\Controllers\Academic\AdmissionController::class, 'create'])->name('students.create');
         Route::post('students', [App\Http\Controllers\Academic\AdmissionController::class, 'store'])->name('students.store');
         
-        Route::inertia('classes', 'classes/index')->name('classes.index');
-        Route::inertia('subjects', 'subjects/index')->name('subjects.index');
+        Route::get('classes', [App\Http\Controllers\Academic\SchoolClassController::class, 'index'])->name('classes.index');
+        Route::post('classes', [App\Http\Controllers\Academic\SchoolClassController::class, 'store'])->name('classes.store');
+        Route::delete('classes/{id}', [App\Http\Controllers\Academic\SchoolClassController::class, 'destroy'])->name('classes.destroy');
+        Route::get('subjects', [App\Http\Controllers\Academic\SubjectController::class, 'index'])->name('subjects.index');
+        Route::post('subjects', [App\Http\Controllers\Academic\SubjectController::class, 'store'])->name('subjects.store');
+        Route::delete('subjects/{id}', [App\Http\Controllers\Academic\SubjectController::class, 'destroy'])->name('subjects.destroy');
         
         // Attendance
         Route::get('attendance', [App\Http\Controllers\Academic\AttendanceController::class, 'index'])->name('attendance.index');

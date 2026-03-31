@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
 import { CreditCard, Download, History, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import { dashboard } from '@/routes';
+import payments, { index } from '@/routes/payments';
 
 interface Payment {
     id: string;
@@ -35,7 +36,7 @@ export default function FeePayments({ payments }: { payments: { data: Payment[] 
 
     const handleCollectPayment = (e: React.FormEvent) => {
         e.preventDefault();
-        paymentForm.post(collect.url({ current_team: team }), {
+        paymentForm.post(collect.url(), {
             onSuccess: () => {
                 paymentForm.reset();
                 toast.success('Payment collected successfully');
@@ -44,7 +45,7 @@ export default function FeePayments({ payments }: { payments: { data: Payment[] 
     };
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Payments', href: '/payments' }]}>
+        <>
             <Head title="Fee Payments" />
 
             <div className="container mx-auto p-6 space-y-8">
@@ -68,36 +69,36 @@ export default function FeePayments({ payments }: { payments: { data: Payment[] 
                             <form onSubmit={handleCollectPayment} className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="s_id">Student ID</Label>
-                                    <Input 
-                                        id="s_id" 
-                                        value={paymentForm.data.student_id} 
-                                        onChange={e => paymentForm.setData('student_id', e.target.value)} 
+                                    <Input
+                                        id="s_id"
+                                        value={paymentForm.data.student_id}
+                                        onChange={e => paymentForm.setData('student_id', e.target.value)}
                                         placeholder="Enter Student ID"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="a_id">Allocation ID</Label>
-                                    <Input 
-                                        id="a_id" 
-                                        value={paymentForm.data.fee_allocation_id} 
-                                        onChange={e => paymentForm.setData('fee_allocation_id', e.target.value)} 
+                                    <Input
+                                        id="a_id"
+                                        value={paymentForm.data.fee_allocation_id}
+                                        onChange={e => paymentForm.setData('fee_allocation_id', e.target.value)}
                                         placeholder="Allocation Reference"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="amount">Amount ($)</Label>
-                                        <Input 
-                                            id="amount" 
-                                            type="number" 
-                                            value={paymentForm.data.amount_paid} 
-                                            onChange={e => paymentForm.setData('amount_paid', e.target.value)} 
+                                        <Input
+                                            id="amount"
+                                            type="number"
+                                            value={paymentForm.data.amount_paid}
+                                            onChange={e => paymentForm.setData('amount_paid', e.target.value)}
                                             placeholder="0.00"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="method">Method</Label>
-                                        <Select 
+                                        <Select
                                             onValueChange={value => paymentForm.setData('method', value)}
                                             defaultValue={paymentForm.data.method}
                                         >
@@ -114,10 +115,10 @@ export default function FeePayments({ payments }: { payments: { data: Payment[] 
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="period">Period (e.g. April 2026)</Label>
-                                    <Input 
-                                        id="period" 
-                                        value={paymentForm.data.period_identifier} 
-                                        onChange={e => paymentForm.setData('period_identifier', e.target.value)} 
+                                    <Input
+                                        id="period"
+                                        value={paymentForm.data.period_identifier}
+                                        onChange={e => paymentForm.setData('period_identifier', e.target.value)}
                                         placeholder="Month/Term Name"
                                     />
                                 </div>
@@ -161,7 +162,7 @@ export default function FeePayments({ payments }: { payments: { data: Payment[] 
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <Button size="icon" variant="ghost" asChild>
-                                                    <a href={downloadReceipt.url({ current_team: team, id: p.id })} target="_blank">
+                                                    <a href={downloadReceipt.url({ id: p.id })} target="_blank">
                                                         <Download className="h-4 w-4" />
                                                     </a>
                                                 </Button>
@@ -181,6 +182,11 @@ export default function FeePayments({ payments }: { payments: { data: Payment[] 
                     </Card>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }
+FeePayments.layout = (props: { currentTeam?: { slug: string } | null }) => ({
+    breadcrumbs: [
+        { title: 'Payments', href: index.url() },
+    ],
+});

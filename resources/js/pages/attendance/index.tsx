@@ -39,7 +39,7 @@ export default function AttendanceIndex({ classes }: { classes: SchoolClass[] })
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
                                 <Label htmlFor="class_id">Class</Label>
-                                <Select 
+                                <Select
                                     onValueChange={(value) => setData('class_id', value)}
                                     required
                                 >
