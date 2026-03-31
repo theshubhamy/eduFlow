@@ -1,4 +1,3 @@
-import AuthCardLayout from '@/layouts/auth/auth-card-layout';
 import { Form, Head } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -15,10 +14,7 @@ type Props = {
 
 export default function ResetPassword({ token, email }: Props) {
     return (
-        <AuthCardLayout 
-            title="Reset password" 
-            description="Enter your new password below to secure your account"
-        >
+        <>
             <Head title="Reset password" />
 
             <Form
@@ -81,7 +77,7 @@ export default function ResetPassword({ token, email }: Props) {
                     </div>
                 )}
             </Form>
-        </AuthCardLayout>
+        </>
     );
 }
 

@@ -1,4 +1,3 @@
-import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 import { Form, Head } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -12,10 +11,7 @@ import { store } from '@/routes/register';
 
 export default function Register() {
     return (
-        <AuthSplitLayout
-            title="Institutional Onboarding"
-            description="Join our global network of digitally-empowered schools"
-        >
+        <>
             <Head title="Register" />
             <Form
                 {...store.form()}
@@ -113,6 +109,6 @@ export default function Register() {
                     </>
                 )}
             </Form>
-        </AuthSplitLayout>
+        </>
     );
 }

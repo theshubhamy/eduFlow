@@ -1,4 +1,3 @@
-import AuthSimpleLayout from '@/layouts/auth/auth-simple-layout';
 import { Form, Head } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import InputError from '@/components/input-error';
@@ -11,10 +10,7 @@ import { email } from '@/routes/password';
 
 export default function ForgotPassword({ status }: { status?: string }) {
     return (
-        <AuthSimpleLayout
-            title="Account Recovery"
-            description="Enter your institutional email to receive specialized reset instructions"
-        >
+        <>
             <Head title="Forgot password" />
 
             {status && (
@@ -64,7 +60,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                     </TextLink>
                 </div>
             </div>
-        </AuthSimpleLayout>
+        </>
     );
 }
 

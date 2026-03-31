@@ -1,4 +1,3 @@
-import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 import { Form, Head } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -24,10 +23,7 @@ export default function Login({
     canRegister,
 }: Props) {
     return (
-        <AuthSplitLayout
-            title="Professional Access"
-            description="Enter your credentials to manage your institutional dashboard"
-        >
+        <>
             <Head title="Log in" />
 
             <div className="grid gap-6">
@@ -125,6 +121,6 @@ export default function Login({
                     </div>
                 )}
             </div>
-        </AuthSplitLayout>
+        </ >
     );
 }
