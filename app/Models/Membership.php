@@ -18,11 +18,14 @@ class Membership extends Model
     protected $table = 'team_members';
 
     /**
-     * Indicates if the IDs are auto-incrementing.
-     *
-     * @var bool
+     * The type of the primary key.
      */
-    public $incrementing = true;
+    protected $keyType = 'string';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     */
+    public $incrementing = false;
 
     /**
      * Get the team that the membership belongs to.

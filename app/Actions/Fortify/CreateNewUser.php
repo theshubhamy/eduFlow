@@ -31,16 +31,14 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        return DB::transaction(function () use ($input) {
-            $user = User::create([
-                'name' => $input['name'],
-                'email' => $input['email'],
-                'password' => $input['password'],
-            ]);
+        $user = User::create([
+            'name' => $input['name'],
+            'email' => $input['email'],
+            'password' => $input['password'],
+        ]);
 
-            $this->createTeam->handle($user, $user->name."'s Team", isPersonal: true);
+        $this->createTeam->handle($user, $user->name."'s Team", isPersonal: true);
 
-            return $user;
-        });
+        return $user;
     }
 }

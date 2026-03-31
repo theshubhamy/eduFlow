@@ -20,6 +20,16 @@ class User extends Authenticatable
     use HasFactory, HasTeams, Notifiable, TwoFactorAuthenticatable;
 
     /**
+     * The type of the primary key.
+     */
+    protected $keyType = 'string';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     */
+    public $incrementing = false;
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -30,6 +40,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'current_team_id' => 'string',
         ];
     }
 }

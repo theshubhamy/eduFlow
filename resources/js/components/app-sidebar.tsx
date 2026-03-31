@@ -14,14 +14,17 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+import { dashboard as schoolDashboard } from '@/routes';
+import { index as studentsIndex } from '@/routes/students';
+import { index as attendanceIndex } from '@/routes/attendance';
+import { index as feesIndex } from '@/routes/fees';
+import { index as paymentsIndex } from '@/routes/payments';
+import { index as classesIndex } from '@/routes/classes';
+import { index as subjectsIndex } from '@/routes/subjects';
 import type { NavItem } from '@/types';
 
 export function AppSidebar() {
-    const page = usePage();
-    const dashboardUrl = page.props.currentTeam
-        ? dashboard(page.props.currentTeam.slug)
-        : '/';
+    const dashboardUrl = schoolDashboard().url;
 
     const mainNavItems: NavItem[] = [
         {
@@ -31,12 +34,12 @@ export function AppSidebar() {
         },
         {
             title: 'Admission',
-            href: '/students',
+            href: studentsIndex().url,
             icon: Users,
         },
         {
             title: 'Attendance',
-            href: '/attendance',
+            href: attendanceIndex().url,
             icon: CheckCircle2,
         },
         {
@@ -47,11 +50,11 @@ export function AppSidebar() {
             items: [
                 {
                     title: 'Fees & Allocations',
-                    href: '/fees',
+                    href: feesIndex().url,
                 },
                 {
                     title: 'Payments & Receipts',
-                    href: '/payments',
+                    href: paymentsIndex().url,
                 },
             ],
         },
@@ -62,11 +65,11 @@ export function AppSidebar() {
             items: [
                 {
                     title: 'Classes',
-                    href: '/classes',
+                    href: classesIndex().url,
                 },
                 {
                     title: 'Subjects',
-                    href: '/subjects',
+                    href: subjectsIndex().url,
                 },
             ],
         },

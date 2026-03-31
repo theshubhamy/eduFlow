@@ -18,8 +18,6 @@ class LoginResponse implements LoginResponseContract
             abort(403);
         }
 
-        URL::defaults(['current_team' => $team->slug]);
-
         return $request->wantsJson()
             ? new JsonResponse(['two_factor' => false], 200)
             : redirect()->intended(route('dashboard'));

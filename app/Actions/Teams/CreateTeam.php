@@ -14,11 +14,7 @@ class CreateTeam
      */
     public function handle(User $user, string $name, bool $isPersonal = false): Team
     {
-        if (DB::transactionLevel() > 0) {
-            return $this->createTeam($user, $name, $isPersonal);
-        }
-
-        return DB::transaction(fn () => $this->createTeam($user, $name, $isPersonal));
+        return $this->createTeam($user, $name, $isPersonal);
     }
 
     /**

@@ -1,14 +1,14 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { dashboard, login, register } from '@/routes';
+import { login, register, dashboard as schoolDashboard } from '@/routes';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-    CheckCircle2, 
-    CreditCard, 
-    Users, 
-    Bell, 
-    ShieldCheck, 
-    LayoutDashboard, 
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    CheckCircle2,
+    CreditCard,
+    Users,
+    Bell,
+    ShieldCheck,
+    LayoutDashboard,
     ArrowRight,
     GraduationCap
 } from 'lucide-react';
@@ -18,8 +18,8 @@ export default function Welcome({
 }: {
     canRegister?: boolean;
 }) {
-    const { auth, currentTeam } = usePage().props;
-    const dashboardUrl = (currentTeam as any) ? dashboard((currentTeam as any).slug) : '/';
+    const { auth } = usePage().props;
+    const dashboardUrl = schoolDashboard().url;
 
     const features = [
         {
@@ -99,7 +99,7 @@ export default function Welcome({
                                 <ShieldCheck className="w-4 h-4" /> Cloud-Native Multi-Tenant SaaS
                             </div>
                             <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-[1.1]">
-                                Empower Your School <br /> 
+                                Empower Your School <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
                                     With Smart Logic.
                                 </span>
@@ -119,9 +119,9 @@ export default function Welcome({
 
                         <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000">
                             <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 blur-3xl opacity-50 dark:opacity-20 rounded-[3rem]"></div>
-                            <img 
-                                src="/images/hero.png" 
-                                alt="EduFlow Dashboard Preview" 
+                            <img
+                                src="/images/hero.png"
+                                alt="EduFlow Dashboard Preview"
                                 className="relative z-10 w-full h-auto rounded-3xl shadow-2xl border border-gray-100 dark:border-white/10"
                             />
                         </div>
@@ -166,7 +166,7 @@ export default function Welcome({
                         {/* Inner Decor */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-                        
+
                         <h2 className="text-3xl lg:text-5xl font-bold text-white relative z-10 leading-tight">
                             Ready to transform your school network <br className="hidden lg:block" /> with digital logic?
                         </h2>
@@ -189,7 +189,7 @@ export default function Welcome({
             <footer className="py-12 border-t border-gray-100 dark:border-white/10 text-center">
                 <div className="container mx-auto px-4 space-y-6">
                     <div className="flex items-center justify-center gap-2">
-                         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                             <GraduationCap className="text-white w-4 h-4" />
                         </div>
                         <span className="text-lg font-bold dark:text-white">EduFlow</span>

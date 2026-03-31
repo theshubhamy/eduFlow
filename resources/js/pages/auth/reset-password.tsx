@@ -1,3 +1,4 @@
+import AuthCardLayout from '@/layouts/auth/auth-card-layout';
 import { Form, Head } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -14,7 +15,10 @@ type Props = {
 
 export default function ResetPassword({ token, email }: Props) {
     return (
-        <>
+        <AuthCardLayout 
+            title="Reset password" 
+            description="Enter your new password below to secure your account"
+        >
             <Head title="Reset password" />
 
             <Form
@@ -24,37 +28,34 @@ export default function ResetPassword({ token, email }: Props) {
             >
                 {({ processing, errors }) => (
                     <div className="grid gap-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
+                        <div className="grid gap-2 text-left">
+                            <Label htmlFor="email" className="text-zinc-600 dark:text-zinc-400">Email address</Label>
                             <Input
                                 id="email"
                                 type="email"
                                 name="email"
                                 autoComplete="email"
                                 value={email}
-                                className="mt-1 block w-full"
+                                className="h-11 rounded-xl bg-zinc-50 dark:bg-zinc-900/50"
                                 readOnly
                             />
-                            <InputError
-                                message={errors.email}
-                                className="mt-2"
-                            />
+                            <InputError message={errors.email} />
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
+                        <div className="grid gap-2 text-left">
+                            <Label htmlFor="password">New Password</Label>
                             <PasswordInput
                                 id="password"
                                 name="password"
                                 autoComplete="new-password"
-                                className="mt-1 block w-full"
+                                className="h-11 rounded-xl"
                                 autoFocus
-                                placeholder="Password"
+                                placeholder="••••••••"
                             />
                             <InputError message={errors.password} />
                         </div>
 
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-left">
                             <Label htmlFor="password_confirmation">
                                 Confirm password
                             </Label>
@@ -62,28 +63,25 @@ export default function ResetPassword({ token, email }: Props) {
                                 id="password_confirmation"
                                 name="password_confirmation"
                                 autoComplete="new-password"
-                                className="mt-1 block w-full"
-                                placeholder="Confirm password"
+                                className="h-11 rounded-xl"
+                                placeholder="••••••••"
                             />
-                            <InputError
-                                message={errors.password_confirmation}
-                                className="mt-2"
-                            />
+                            <InputError message={errors.password_confirmation} />
                         </div>
 
                         <Button
                             type="submit"
-                            className="mt-4 w-full"
+                            className="h-11 rounded-xl bg-indigo-600 font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:hover:shadow-none"
                             disabled={processing}
                             data-test="reset-password-button"
                         >
-                            {processing && <Spinner />}
+                            {processing && <Spinner className="mr-2 h-4 w-4 animate-spin" />}
                             Reset password
                         </Button>
                     </div>
                 )}
             </Form>
-        </>
+        </AuthCardLayout>
     );
 }
 

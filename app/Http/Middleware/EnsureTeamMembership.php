@@ -18,9 +18,18 @@ class EnsureTeamMembership
      */
     public function handle(Request $request, Closure $next, ?string $minimumRole = null): Response
     {
-        [$user, $team] = [$request->user(), $this->team($request)];
+        $user = $request->user();
+        $team = $this->team($request);
 
-        abort_if(! $user || ! $team || ! $user->belongsToTeam($team), 403);
+        if (! $team || ! $user->belongsToTeam($team)) {
+            // If the user has teams, but this team is invalid, switch to their personal or first team
+            if ($user && $user->teams()->count() > 0) {
+                $user->switchTeam($user->teams()->first());
+                return redirect()->route('dashboard');
+            }
+
+            abort(403);
+        }
 
         $this->ensureTeamMemberHasRequiredRole($user, $team, $minimumRole);
 
@@ -57,12 +66,13 @@ class EnsureTeamMembership
      */
     protected function team(Request $request): ?Team
     {
-        $team = $request->route('current_team') ?? $request->route('team');
+        $team = $request->route('current_team') ?? $request->route('team') ?? $request->query('team');
 
         if (is_string($team)) {
             $team = Team::where('slug', $team)->first();
         }
 
-        return $team;
+        // Fallback to user's current team if no team parameter is present
+        return $team ?? $request->user()?->currentTeam;
     }
 }

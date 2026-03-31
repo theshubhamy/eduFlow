@@ -12,30 +12,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\URL;
 
 trait HasTeams
 {
-    /**
-     * Get all of the teams the user belongs to.
-     *
-     * @return BelongsToMany<Team, $this>
-     */
-    public function teams(): BelongsToMany
+    public function teams(): HasMany
     {
-        return $this->belongsToMany(Team::class, 'team_members', 'user_id', 'team_id')
-            ->withPivot(['role'])
-            ->withTimestamps();
+        return $this->hasMany(Membership::class, 'user_id');
     }
 
     /**
      * Get all of the teams the user owns.
      *
-     * @return BelongsToMany<Team, $this>
+     * @return HasMany<Membership, $this>
      */
-    public function ownedTeams(): BelongsToMany
+    public function ownedTeams(): HasMany
     {
-        return $this->teams()->wherePivot('role', TeamRole::Owner->value);
+        return $this->teams()->where('role', TeamRole::Owner->value);
     }
 
     /**
@@ -63,9 +55,11 @@ trait HasTeams
      */
     public function personalTeam(): ?Team
     {
-        return $this->teams()
-            ->where('is_personal', true)
-            ->first();
+        $membership = $this->teams()->get()->first(function ($m) {
+            return $m->team?->is_personal;
+        });
+
+        return $membership?->team;
     }
 
     /**
@@ -77,10 +71,8 @@ trait HasTeams
             return false;
         }
 
-        $this->update(['current_team_id' => $team->getKey()]);
+        $this->update(['current_team_id' => (string)$team->getKey()]);
         $this->setRelation('currentTeam', $team);
-
-        URL::defaults(['current_team' => $team->slug]);
 
         return true;
     }
@@ -90,7 +82,9 @@ trait HasTeams
      */
     public function belongsToTeam(Team $team): bool
     {
-        return $this->teams()->where('_id', $team->getKey())->exists();
+        return Membership::where('user_id', (string)$this->getKey())
+            ->where('team_id', (string)$team->getKey())
+            ->exists();
     }
 
     /**
@@ -114,8 +108,8 @@ trait HasTeams
      */
     public function teamRole(Team $team): ?TeamRole
     {
-        return $this->teamMemberships()
-            ->where('team_id', $team->getKey())
+        return $this->teams()
+            ->where('team_id', (string)$team->getKey())
             ->first()
             ?->role;
     }
@@ -128,7 +122,10 @@ trait HasTeams
     public function toUserTeams(bool $includeCurrent = false): Collection
     {
         return $this->teams()
+            ->with('team')
             ->get()
+            ->map(fn (Membership $membership) => $membership->team)
+            ->filter()
             ->map(fn (Team $team) => ! $includeCurrent && $this->isCurrentTeam($team) ? null : $this->toUserTeam($team))
             ->filter()
             ->values();

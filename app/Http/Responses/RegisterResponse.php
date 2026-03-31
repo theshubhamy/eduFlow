@@ -18,8 +18,6 @@ class RegisterResponse implements RegisterResponseContract
             abort(403);
         }
 
-        URL::defaults(['current_team' => $team->slug]);
-
         return $request->wantsJson()
             ? new JsonResponse(['two_factor' => false], 201)
             : redirect()->intended(route('dashboard'));
