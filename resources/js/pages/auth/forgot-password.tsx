@@ -1,4 +1,4 @@
-import AuthCardLayout from '@/layouts/auth/auth-card-layout';
+import AuthSimpleLayout from '@/layouts/auth/auth-simple-layout';
 import { Form, Head } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import InputError from '@/components/input-error';
@@ -11,59 +11,60 @@ import { email } from '@/routes/password';
 
 export default function ForgotPassword({ status }: { status?: string }) {
     return (
-        <AuthCardLayout 
-            title="Forgot password?" 
-            description="No worries! Enter your email and we'll send you a reset link"
+        <AuthSimpleLayout
+            title="Account Recovery"
+            description="Enter your institutional email to receive specialized reset instructions"
         >
             <Head title="Forgot password" />
 
             {status && (
-                <div className="mb-4 rounded-xl bg-emerald-50 p-4 text-center text-sm font-medium text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+                <div className="mb-6 rounded-xl bg-blue-50/50 p-4 text-center text-sm font-semibold text-blue-600 backdrop-blur-sm dark:bg-blue-950/20 dark:text-blue-400">
                     {status}
                 </div>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <Form {...email.form()}>
                     {({ processing, errors }) => (
-                        <div className="grid gap-5">
+                        <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email" className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Email address</Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     name="email"
                                     autoComplete="off"
                                     autoFocus
-                                    placeholder="email@example.com"
-                                    className="h-11 rounded-xl"
+                                    placeholder="admin@school.app"
+                                    className="h-12 rounded-xl border-neutral-200 bg-neutral-50/50 px-4 transition-all focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-white/5 dark:focus:bg-zinc-900"
                                 />
 
                                 <InputError message={errors.email} />
                             </div>
 
                             <Button
-                                className="h-11 rounded-xl bg-indigo-600 font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:hover:shadow-none"
+                                className="relative h-12 w-full overflow-hidden rounded-xl bg-indigo-600 font-bold text-white transition-all hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-500/25 active:scale-[0.98] disabled:opacity-70"
                                 disabled={processing}
                                 data-test="email-password-reset-link-button"
                             >
-                                {processing && (
-                                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                {processing ? (
+                                    <LoaderCircle className="h-5 w-5 animate-spin" />
+                                ) : (
+                                    "Dispatch Recovery Link"
                                 )}
-                                Send reset link
                             </Button>
                         </div>
                     )}
                 </Form>
 
-                <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-                    Remember your password?{' '}
-                    <TextLink href={login()} className="font-semibold text-indigo-600 hover:text-indigo-500">
-                        Back to sign in
+                <div className="text-center text-sm text-neutral-500 dark:text-neutral-400 font-medium pt-2">
+                    Remembered your access?{' '}
+                    <TextLink href={login()} className="font-bold text-indigo-600 hover:text-indigo-500 transition-colors">
+                        Return to Sign In
                     </TextLink>
                 </div>
             </div>
-        </AuthCardLayout>
+        </AuthSimpleLayout>
     );
 }
 

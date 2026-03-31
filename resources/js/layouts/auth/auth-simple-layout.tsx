@@ -9,28 +9,29 @@ export default function AuthSimpleLayout({
     description,
 }: AuthLayoutProps) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
-            <div className="w-full max-w-sm">
+        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-neutral-50 p-6 md:p-10 dark:bg-black">
+            <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="flex flex-col gap-8">
-                    <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-col items-center gap-4 text-center">
                         <Link
                             href={home()}
-                            className="flex flex-col items-center gap-2 font-medium"
+                            className="group flex flex-col items-center gap-3 font-medium transition-transform hover:scale-105"
                         >
-                            <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
-                                <AppLogoIcon className="size-9 fill-current text-[var(--foreground)] dark:text-white" />
+                            <div className="mb-1 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-xl ring-1 ring-black/5 transition-shadow group-hover:shadow-2xl dark:bg-zinc-900 dark:ring-white/10">
+                                <AppLogoIcon className="size-10 fill-indigo-600 transition-colors group-hover:fill-indigo-500" />
                             </div>
-                            <span className="sr-only">{title}</span>
                         </Link>
 
-                        <div className="space-y-2 text-center">
-                            <h1 className="text-xl font-medium">{title}</h1>
-                            <p className="text-center text-sm text-muted-foreground">
+                        <div className="space-y-1">
+                            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">{title}</h1>
+                            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
                                 {description}
                             </p>
                         </div>
                     </div>
-                    {children}
+                    <div className="grid gap-6">
+                        {children}
+                    </div>
                 </div>
             </div>
         </div>
