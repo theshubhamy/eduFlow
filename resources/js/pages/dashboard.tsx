@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { dashboard } from '@/routes';
+import { create } from '@/routes/students';
 
 export default function Dashboard() {
     return (
@@ -89,9 +90,11 @@ export default function Dashboard() {
 
                 {/* Quick Actions Row */}
                 <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-                    <Button variant="outline" className="h-20 flex flex-col items-center justify-center gap-2 border-neutral-200 bg-white hover:bg-neutral-50 hover:text-indigo-600 dark:border-neutral-800 dark:bg-zinc-950 dark:hover:bg-zinc-900 dark:hover:text-indigo-400 transition-colors rounded-xl shadow-sm">
-                        <UserPlus className="h-5 w-5" />
-                        <span className="text-xs font-semibold">Add Student</span>
+                    <Button asChild variant="outline" className="h-20 border-neutral-200 bg-white hover:bg-neutral-50 hover:text-indigo-600 dark:border-neutral-800 dark:bg-zinc-950 dark:hover:bg-zinc-900 dark:hover:text-indigo-400 transition-colors rounded-xl shadow-sm">
+                        <Link href={create.url()} className="flex flex-col items-center justify-center gap-2 h-full w-full">
+                            <UserPlus className="h-5 w-5" />
+                            <span className="text-xs font-semibold">Add Student</span>
+                        </Link>
                     </Button>
                     <Button variant="outline" className="h-20 flex flex-col items-center justify-center gap-2 border-neutral-200 bg-white hover:bg-neutral-50 hover:text-emerald-600 dark:border-neutral-800 dark:bg-zinc-950 dark:hover:bg-zinc-900 dark:hover:text-emerald-400 transition-colors rounded-xl shadow-sm">
                         <CalendarCheck className="h-5 w-5" />
