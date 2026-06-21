@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useLogin } from '@/hooks/queries/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
-  const { login } = useAuth();
+  const loginMutation = useLogin();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,10 +30,10 @@ export function LoginForm({
     setLoading(true);
     setErrorMsg('');
     try {
-      await login(email, password);
+      await loginMutation.mutateAsync({ email, password });
       navigate('/dashboard');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Invalid credentials. Please try again.');
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }

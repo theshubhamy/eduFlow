@@ -1,4 +1,5 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentUser } from "@/hooks/queries/useAuth";
+import { useSwitchTeam } from "@/hooks/queries/useTeam";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +19,10 @@ import { ChevronsUpDownIcon, GraduationCapIcon } from "lucide-react";
 
 export function TeamSwitcher() {
   const { isMobile } = useSidebar();
-  const { teams, currentTeam, switchSchool } = useAuth();
+  const { data } = useCurrentUser();
+  const switchTeamMutation = useSwitchTeam();
+  const teams = data?.teams || [];
+  const currentTeam = data?.currentTeam;
 
   // Find the active team based on current user context
   const activeTeam = teams.find((t) => t.id === currentTeam?.id) || teams[0];
@@ -63,7 +67,7 @@ export function TeamSwitcher() {
             {teams.map((team, index) => (
               <DropdownMenuItem
                 key={team.id}
-                onClick={() => switchSchool(team.id)}
+                onClick={() => switchTeamMutation.mutate(team.id)}
                 className="gap-2 p-2 cursor-pointer"
               >
                 <div className="flex size-6 items-center justify-center rounded-md border bg-muted">

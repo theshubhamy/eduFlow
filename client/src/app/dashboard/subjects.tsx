@@ -1,102 +1,62 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { BookOpen, Plus, Trash2, Loader2, X, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import {
+  useSubjects,
+  useCreateSubject,
+  useDeleteSubject,
+} from "@/hooks/queries/useSubjects";
+import { BookOpen, Plus, Trash2, Loader2, X, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-
-interface Subject {
-  id: string;
-  name: string;
-  code: string;
-  school_class: {
-    id: string;
-    name: string;
-    section: string;
-  } | null;
-  teacher: {
-    id: string;
-    name: string;
-  } | null;
-}
-
-interface SubjectsData {
-  subjects: Subject[];
-  classes: Array<{ id: string; name: string; section: string }>;
-  teachers: Array<{ id: string; name: string }>;
-}
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SubjectsPage() {
-  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
-  const [classId, setClassId] = useState('');
-  const [teacherId, setTeacherId] = useState('');
-  const [submitError, setSubmitError] = useState('');
-  const [deleteError, setDeleteError] = useState('');
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [classId, setClassId] = useState("");
+  const [teacherId, setTeacherId] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
-  const { data, isLoading, error } = useQuery<SubjectsData>({
-    queryKey: ['subjectsData'],
-    queryFn: () => api.get('/api/subjects').then(res => res.data),
-  });
+  const { data, isLoading, error } = useSubjects();
 
-  const createSubjectMutation = useMutation({
-    mutationFn: (newSubject: {
-      name: string;
-      code: string;
-      class_id: string;
-      teacher_id: string;
-    }) =>
-      api
-        .post('/api/subjects', JSON.stringify(newSubject))
-        .then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subjectsData'] });
-      setIsModalOpen(false);
-      setName('');
-      setCode('');
-      setClassId('');
-      setTeacherId('');
-      setSubmitError('');
-    },
-    onError: (err: any) => {
-      setSubmitError(err.message || 'Failed to create subject.');
-    },
-  });
-
-  const deleteSubjectMutation = useMutation({
-    mutationFn: (subjectId: string) =>
-      api.delete(`/api/subjects/${subjectId}`).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subjectsData'] });
-      setDeleteError('');
-    },
-    onError: (err: any) => {
-      setDeleteError(err.message || 'Failed to delete subject.');
-    },
-  });
+  const createSubjectMutation = useCreateSubject();
+  const deleteSubjectMutation = useDeleteSubject();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !code.trim() || !classId || !teacherId) {
-      setSubmitError('All fields are required.');
+      setSubmitError("All fields are required.");
       return;
     }
-    createSubjectMutation.mutate({
-      name,
-      code,
-      class_id: classId,
-      teacher_id: teacherId,
-    });
+    createSubjectMutation.mutate(
+      {
+        name,
+        code,
+        class_id: classId,
+        teacher_id: teacherId,
+      },
+      {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setName("");
+          setCode("");
+          setClassId("");
+          setTeacherId("");
+          setSubmitError("");
+        },
+        onError: (err: any) => {
+          setSubmitError(err.message || "Failed to create subject.");
+        },
+      },
+    );
   };
 
   if (isLoading) {
@@ -130,7 +90,7 @@ export default function SubjectsPage() {
       <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-6 text-destructive">
         <h2 className="text-lg font-bold">Error loading Subjects</h2>
         <p className="text-sm mt-1">
-          {error instanceof Error ? error.message : 'Something went wrong.'}
+          {error instanceof Error ? error.message : "Something went wrong."}
         </p>
       </div>
     );
@@ -200,7 +160,7 @@ export default function SubjectsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {subjects.map(sub => (
+                  {subjects.map((sub) => (
                     <tr
                       key={sub.id}
                       className="border-b border-border/50 hover:bg-muted/30 transition-all"
@@ -216,16 +176,24 @@ export default function SubjectsPage() {
                       <td className="p-4 text-foreground">
                         {sub.school_class
                           ? `${sub.school_class.name} (${sub.school_class.section})`
-                          : 'Unassigned'}
+                          : "Unassigned"}
                       </td>
                       <td className="p-4 text-muted-foreground">
-                        {sub.teacher?.name || 'Unassigned'}
+                        {sub.teacher?.name || "Unassigned"}
                       </td>
                       <td className="p-4 text-right pr-6">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => deleteSubjectMutation.mutate(sub.id)}
+                          onClick={() =>
+                            deleteSubjectMutation.mutate(sub.id, {
+                              onSuccess: () => setDeleteError(""),
+                              onError: (err: any) =>
+                                setDeleteError(
+                                  err.message || "Failed to delete subject.",
+                                ),
+                            })
+                          }
                           disabled={
                             deleteSubjectMutation.isPending &&
                             deleteSubjectMutation.variables === sub.id
@@ -288,7 +256,7 @@ export default function SubjectsPage() {
                     id="subName"
                     placeholder="e.g. Mathematics, English Literature"
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    onChange={(e) => setName(e.target.value)}
                     required
                   />
                 </div>
@@ -304,7 +272,7 @@ export default function SubjectsPage() {
                     id="subCode"
                     placeholder="e.g. MATH101, ENG-SEC-A"
                     value={code}
-                    onChange={e => setCode(e.target.value)}
+                    onChange={(e) => setCode(e.target.value)}
                     required
                   />
                 </div>
@@ -319,12 +287,12 @@ export default function SubjectsPage() {
                   <select
                     id="classSelect"
                     value={classId}
-                    onChange={e => setClassId(e.target.value)}
+                    onChange={(e) => setClassId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                   >
                     <option value="">Select a Class...</option>
-                    {classes.map(c => (
+                    {classes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name} - {c.section}
                       </option>
@@ -342,12 +310,12 @@ export default function SubjectsPage() {
                   <select
                     id="teacherSelect"
                     value={teacherId}
-                    onChange={e => setTeacherId(e.target.value)}
+                    onChange={(e) => setTeacherId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                   >
                     <option value="">Select a Teacher...</option>
-                    {teachers.map(t => (
+                    {teachers.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
                       </option>
@@ -376,7 +344,7 @@ export default function SubjectsPage() {
                       Adding...
                     </>
                   ) : (
-                    'Add Subject'
+                    "Add Subject"
                   )}
                 </Button>
               </div>

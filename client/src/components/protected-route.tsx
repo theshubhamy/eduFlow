@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentUser } from "@/hooks/queries/useAuth";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -8,7 +8,8 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { data, isLoading } = useCurrentUser();
+  const user = data?.user;
 
   if (isLoading) {
     return (

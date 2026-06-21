@@ -1,107 +1,48 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { Receipt, Plus, X, AlertCircle, Download } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import {
+  usePayments,
+  useFees,
+  useCollectPayment,
+} from "@/hooks/queries/useFinance";
+import { useStudents } from "@/hooks/queries/useStudents";
+import { Receipt, Plus, X, AlertCircle, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-
-interface Payment {
-  id: string;
-  student: {
-    id: string;
-    user: { name: string };
-  };
-  fee_allocation: {
-    id: string;
-    fee_category: { name: string; amount: number };
-  };
-  amount_paid: number;
-  payment_date: string;
-  method: string;
-  status: string;
-  receipt_number: string;
-  period_identifier: string;
-}
-
-interface PaginatedPayments {
-  data: Payment[];
-  current_page: number;
-  per_page: number;
-  total: number;
-  last_page: number;
-}
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PaymentsPage() {
-  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form states
-  const [studentId, setStudentId] = useState('');
-  const [allocationId, setAllocationId] = useState('');
-  const [amountPaid, setAmountPaid] = useState('');
-  const [method, setMethod] = useState('cash');
-  const [period, setPeriod] = useState('');
-  const [submitError, setSubmitError] = useState('');
+  const [studentId, setStudentId] = useState("");
+  const [allocationId, setAllocationId] = useState("");
+  const [amountPaid, setAmountPaid] = useState("");
+  const [method, setMethod] = useState("cash");
+  const [period, setPeriod] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   // 1. Fetch payments list
   const {
     data: paymentsRes,
     isLoading: isPaymentsLoading,
     error,
-  } = useQuery<PaginatedPayments>({
-    queryKey: ['payments', currentPage],
-    queryFn: () =>
-      api
-        .get<PaginatedPayments>(`/api/payments?page=${currentPage}&limit=10`)
-        .then(res => res.data),
-  });
+  } = usePayments({ page: currentPage, limit: 10 });
 
   // 2. Fetch students options
-  const { data: studentsRes } = useQuery<any>({
-    queryKey: ['studentsForPayments'],
-    queryFn: () => api.get('/api/students?limit=100').then(res => res.data),
-    enabled: isModalOpen,
-  });
+  const { data: studentsRes } = useStudents(1, 100, isModalOpen);
 
   // 3. Fetch allocations options (from fees console)
-  const { data: feesRes } = useQuery<any>({
-    queryKey: ['feesForPayments'],
-    queryFn: () => api.get('/api/fees').then(res => res.data),
-    enabled: isModalOpen,
-  });
+  const { data: feesRes } = useFees({ enabled: isModalOpen });
 
-  const collectPaymentMutation = useMutation({
-    mutationFn: (payload: {
-      student_id: string;
-      fee_allocation_id: string;
-      amount_paid: number;
-      method: string;
-      period_identifier: string;
-    }) => api.post('/api/payments/collect', payload).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] }); // update revenue counter
-      setIsModalOpen(false);
-      setStudentId('');
-      setAllocationId('');
-      setAmountPaid('');
-      setMethod('cash');
-      setPeriod('');
-      setSubmitError('');
-    },
-    onError: (err: any) => {
-      setSubmitError(err.message || 'Failed to collect payment.');
-    },
-  });
+  const collectPaymentMutation = useCollectPayment();
 
   const handleSelectAllocation = (allocId: string) => {
     setAllocationId(allocId);
@@ -120,20 +61,36 @@ export default function PaymentsPage() {
       !method ||
       !period.trim()
     ) {
-      setSubmitError('All fields are required.');
+      setSubmitError("All fields are required.");
       return;
     }
-    collectPaymentMutation.mutate({
-      student_id: studentId,
-      fee_allocation_id: allocationId,
-      amount_paid: parseFloat(amountPaid),
-      method,
-      period_identifier: period,
-    });
+    collectPaymentMutation.mutate(
+      {
+        student_id: studentId,
+        fee_allocation_id: allocationId,
+        amount_paid: parseFloat(amountPaid),
+        method,
+        period_identifier: period,
+      },
+      {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setStudentId("");
+          setAllocationId("");
+          setAmountPaid("");
+          setMethod("cash");
+          setPeriod("");
+          setSubmitError("");
+        },
+        onError: (err: any) => {
+          setSubmitError(err.message || "Failed to collect payment.");
+        },
+      },
+    );
   };
 
   const handleDownloadReceipt = (paymentId: string) => {
-    window.location.href = `/api/payments/${paymentId}/receipt`;
+    window.location.assign(`/api/payments/${paymentId}/receipt`);
   };
 
   if (isPaymentsLoading) {
@@ -167,7 +124,7 @@ export default function PaymentsPage() {
       <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-6 text-destructive">
         <h2 className="text-lg font-bold">Error loading Payments Journal</h2>
         <p className="text-sm mt-1">
-          {error instanceof Error ? error.message : 'Something went wrong.'}
+          {error instanceof Error ? error.message : "Something went wrong."}
         </p>
       </div>
     );
@@ -234,7 +191,7 @@ export default function PaymentsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {payments.map(p => (
+                    {payments.map((p) => (
                       <tr
                         key={p.id}
                         className="border-b border-border/50 hover:bg-muted/30 transition-all"
@@ -282,7 +239,7 @@ export default function PaymentsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="cursor-pointer"
               >
@@ -294,7 +251,9 @@ export default function PaymentsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="cursor-pointer"
               >
@@ -343,7 +302,7 @@ export default function PaymentsPage() {
                   <select
                     id="studentSelect"
                     value={studentId}
-                    onChange={e => setStudentId(e.target.value)}
+                    onChange={(e) => setStudentId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     required
                   >
@@ -366,7 +325,7 @@ export default function PaymentsPage() {
                   <select
                     id="allocSelect"
                     value={allocationId}
-                    onChange={e => handleSelectAllocation(e.target.value)}
+                    onChange={(e) => handleSelectAllocation(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     required
                   >
@@ -400,7 +359,7 @@ export default function PaymentsPage() {
                       step="0.01"
                       placeholder="e.g. 150.00"
                       value={amountPaid}
-                      onChange={e => setAmountPaid(e.target.value)}
+                      onChange={(e) => setAmountPaid(e.target.value)}
                       required
                     />
                   </div>
@@ -415,7 +374,7 @@ export default function PaymentsPage() {
                     <select
                       id="methodSelect"
                       value={method}
-                      onChange={e => setMethod(e.target.value)}
+                      onChange={(e) => setMethod(e.target.value)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       required
                     >
@@ -438,7 +397,7 @@ export default function PaymentsPage() {
                     id="periodInput"
                     placeholder="e.g. June 2026, Term 1 2026"
                     value={period}
-                    onChange={e => setPeriod(e.target.value)}
+                    onChange={(e) => setPeriod(e.target.value)}
                     required
                   />
                 </div>
@@ -457,8 +416,8 @@ export default function PaymentsPage() {
                   disabled={collectPaymentMutation.isPending}
                 >
                   {collectPaymentMutation.isPending
-                    ? 'Recording...'
-                    : 'Record Payment'}
+                    ? "Recording..."
+                    : "Record Payment"}
                 </Button>
               </div>
             </form>

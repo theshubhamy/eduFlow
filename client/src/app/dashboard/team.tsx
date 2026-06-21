@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from "react";
+import {
+  useMembers,
+  useInviteMember,
+  useCancelInvitation,
+  useRemoveMember,
+  useUpdateMemberRole,
+  useCreateTeam,
+} from "@/hooks/queries/useTeam";
+import { useCurrentUser } from "@/hooks/queries/useAuth";
 import {
   Loader2,
   X,
@@ -10,195 +16,84 @@ import {
   Trash2,
   Check,
   AlertCircle,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-
-interface Member {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  role_label: string;
-}
-
-interface Invitation {
-  code: string;
-  email: string;
-  role: string;
-  role_label: string;
-  created_at: string;
-}
-
-interface TeamData {
-  team: {
-    id: string;
-    name: string;
-    slug: string;
-    isPersonal: boolean;
-  };
-  members: Member[];
-  invitations: Invitation[];
-  permissions: {
-    canUpdateTeam: boolean;
-    canDeleteTeam: boolean;
-    canAddMember: boolean;
-    canUpdateMember: boolean;
-    canRemoveMember: boolean;
-  };
-  availableRoles: Array<{ value: string; label: string }>;
-}
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TeamPage() {
-  const queryClient = useQueryClient();
-  const { currentTeam, refreshUser } = useAuth();
+  const { data: userData } = useCurrentUser();
+  const currentTeam = userData?.currentTeam;
   const [activeTab, setActiveTab] = useState<
-    'members' | 'invites' | 'newSchool'
-  >('members');
+    "members" | "invites" | "newSchool"
+  >("members");
 
   // Form States
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('faculty');
-  const [newSchoolName, setNewSchoolName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("faculty");
+  const [newSchoolName, setNewSchoolName] = useState("");
 
   // Feedback States
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const {
-    data: teamData,
-    isLoading,
-    error,
-  } = useQuery<TeamData>({
-    queryKey: ['teamMembers', currentTeam?.id],
-    queryFn: () => api.get('/api/members').then(res => res.data),
-    enabled: !!currentTeam?.id,
-  });
+  const { data: teamData, isLoading, error } = useMembers(currentTeam?.id);
 
-  const inviteMutation = useMutation({
-    mutationFn: (payload: { email: string; role: string }) =>
-      api
-        .post(
-          `/api/teams/${currentTeam.id}/invitations`,
-          JSON.stringify(payload),
-        )
-        .then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['teamMembers', currentTeam?.id],
-      });
-      setInviteEmail('');
-      setInviteRole('faculty');
-      setSuccessMsg('Invitation sent successfully.');
-      setErrorMsg('');
-    },
-    onError: (err: any) => {
-      setErrorMsg(err.message || 'Failed to invite member.');
-    },
-  });
-
-  const cancelInviteMutation = useMutation({
-    mutationFn: (code: string) =>
-      api
-        .delete(`/api/teams/${currentTeam.id}/invitations/${code}`)
-        .then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['teamMembers', currentTeam?.id],
-      });
-      setSuccessMsg('Invitation cancelled successfully.');
-      setErrorMsg('');
-    },
-    onError: (err: any) => {
-      setErrorMsg(err.message || 'Failed to cancel invitation.');
-    },
-  });
-
-  const removeMemberMutation = useMutation({
-    mutationFn: (memberUserId: string) =>
-      api
-        .delete(`/api/teams/${currentTeam.id}/members/${memberUserId}`)
-        .then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['teamMembers', currentTeam?.id],
-      });
-      setSuccessMsg('Staff member removed successfully.');
-      setErrorMsg('');
-    },
-    onError: (err: any) => {
-      setErrorMsg(err.message || 'Failed to remove staff member.');
-    },
-  });
-
-  const updateRoleMutation = useMutation({
-    mutationFn: ({
-      memberUserId,
-      role,
-    }: {
-      memberUserId: string;
-      role: string;
-    }) =>
-      api
-        .patch(
-          `/api/teams/${currentTeam.id}/members/${memberUserId}`,
-          JSON.stringify({ role }),
-        )
-        .then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['teamMembers', currentTeam?.id],
-      });
-      setSuccessMsg('Member role updated successfully.');
-      setErrorMsg('');
-    },
-    onError: (err: any) => {
-      setErrorMsg(err.message || 'Failed to update member role.');
-    },
-  });
-
-  const createSchoolMutation = useMutation({
-    mutationFn: (name: string) =>
-      api.post('/api/teams', JSON.stringify({ name })).then(res => res.data),
-    onSuccess: async () => {
-      await refreshUser(); // refresh AuthContext to fetch the new team in switcher
-      setNewSchoolName('');
-      setSuccessMsg('New School context created and activated.');
-      setActiveTab('members');
-      setErrorMsg('');
-    },
-    onError: (err: any) => {
-      setErrorMsg(err.message || 'Failed to create new school.');
-    },
-  });
+  const inviteMutation = useInviteMember(currentTeam?.id);
+  const cancelInviteMutation = useCancelInvitation(currentTeam?.id);
+  const removeMemberMutation = useRemoveMember(currentTeam?.id);
+  const updateRoleMutation = useUpdateMemberRole(currentTeam?.id);
+  const createSchoolMutation = useCreateTeam();
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteEmail.trim() || !inviteRole) {
-      setErrorMsg('Email and role are required.');
+    if (!inviteEmail.trim() || !inviteRole || !currentTeam?.id) {
+      setErrorMsg("Email and role are required.");
       return;
     }
-    inviteMutation.mutate({
-      email: inviteEmail,
-      role: inviteRole,
-    });
+    inviteMutation.mutate(
+      { teamId: currentTeam.id, email: inviteEmail, role: inviteRole },
+      {
+        onSuccess: () => {
+          setInviteEmail("");
+          setInviteRole("faculty");
+          setSuccessMsg("Invitation sent successfully.");
+          setErrorMsg("");
+        },
+        onError: (err: any) => {
+          setErrorMsg(err.message || "Failed to invite member.");
+        },
+      },
+    );
   };
 
   const handleCreateSchool = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSchoolName.trim()) {
-      setErrorMsg('School name is required.');
+      setErrorMsg("School name is required.");
       return;
     }
-    createSchoolMutation.mutate(newSchoolName);
+    createSchoolMutation.mutate(
+      { name: newSchoolName },
+      {
+        onSuccess: () => {
+          setNewSchoolName("");
+          setSuccessMsg("New School context created and activated.");
+          setActiveTab("members");
+          setErrorMsg("");
+        },
+        onError: (err: any) => {
+          setErrorMsg(err.message || "Failed to create new school.");
+        },
+      },
+    );
   };
 
   if (isLoading) {
@@ -221,7 +116,7 @@ export default function TeamPage() {
       <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-6 text-destructive">
         <h2 className="text-lg font-bold">Error loading Staff Roster</h2>
         <p className="text-sm mt-1">
-          {error instanceof Error ? error.message : 'Something went wrong.'}
+          {error instanceof Error ? error.message : "Something went wrong."}
         </p>
       </div>
     );
@@ -234,7 +129,7 @@ export default function TeamPage() {
       <div className="text-left">
         <h1 className="text-3xl font-bold tracking-tight">Staff & Roles</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Currently managing:{' '}
+          Currently managing:{" "}
           <span className="font-semibold text-foreground">{team.name}</span>
         </p>
       </div>
@@ -259,49 +154,49 @@ export default function TeamPage() {
           <div className="flex border-b border-border gap-4">
             <button
               onClick={() => {
-                setActiveTab('members');
-                setErrorMsg('');
-                setSuccessMsg('');
+                setActiveTab("members");
+                setErrorMsg("");
+                setSuccessMsg("");
               }}
               className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-                activeTab === 'members'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                activeTab === "members"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               Active Staff ({members.length})
             </button>
             <button
               onClick={() => {
-                setActiveTab('invites');
-                setErrorMsg('');
-                setSuccessMsg('');
+                setActiveTab("invites");
+                setErrorMsg("");
+                setSuccessMsg("");
               }}
               className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-                activeTab === 'invites'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                activeTab === "invites"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               Pending Invites ({invitations.length})
             </button>
             <button
               onClick={() => {
-                setActiveTab('newSchool');
-                setErrorMsg('');
-                setSuccessMsg('');
+                setActiveTab("newSchool");
+                setErrorMsg("");
+                setSuccessMsg("");
               }}
               className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-                activeTab === 'newSchool'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                activeTab === "newSchool"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               New School Context
             </button>
           </div>
 
-          {activeTab === 'members' && (
+          {activeTab === "members" && (
             <Card className="border-border bg-card">
               <CardContent className="p-0">
                 <div className="relative w-full overflow-auto">
@@ -317,7 +212,7 @@ export default function TeamPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {members.map(member => (
+                      {members.map((member) => (
                         <tr
                           key={member.id}
                           className="border-b border-border/50 hover:bg-muted/30 transition-all"
@@ -330,18 +225,19 @@ export default function TeamPage() {
                           </td>
                           <td className="p-4">
                             {permissions.canUpdateMember &&
-                            member.role !== 'owner' ? (
+                            member.role !== "owner" ? (
                               <select
                                 value={member.role}
-                                onChange={e =>
+                                onChange={(e) =>
                                   updateRoleMutation.mutate({
+                                    teamId: currentTeam?.id,
                                     memberUserId: member.id,
                                     role: e.target.value,
                                   })
                                 }
                                 className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:ring-1 focus:ring-primary"
                               >
-                                {availableRoles.map(r => (
+                                {availableRoles.map((r) => (
                                   <option key={r.value} value={r.value}>
                                     {r.label}
                                   </option>
@@ -355,12 +251,15 @@ export default function TeamPage() {
                           </td>
                           {permissions.canRemoveMember && (
                             <td className="p-4 text-right pr-6">
-                              {member.role !== 'owner' && (
+                              {member.role !== "owner" && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={() =>
-                                    removeMemberMutation.mutate(member.id)
+                                    removeMemberMutation.mutate({
+                                      teamId: currentTeam?.id,
+                                      memberUserId: member.id,
+                                    })
                                   }
                                   disabled={
                                     removeMemberMutation.isPending &&
@@ -388,7 +287,7 @@ export default function TeamPage() {
             </Card>
           )}
 
-          {activeTab === 'invites' && (
+          {activeTab === "invites" && (
             <Card className="border-border bg-card">
               <CardContent className="p-0">
                 {invitations.length === 0 ? (
@@ -410,7 +309,7 @@ export default function TeamPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {invitations.map(invite => (
+                        {invitations.map((invite) => (
                           <tr
                             key={invite.code}
                             className="border-b border-border/50 hover:bg-muted/30 transition-all"
@@ -432,7 +331,10 @@ export default function TeamPage() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() =>
-                                    cancelInviteMutation.mutate(invite.code)
+                                    cancelInviteMutation.mutate({
+                                      teamId: currentTeam?.id,
+                                      inviteCode: invite.code,
+                                    })
                                   }
                                   disabled={
                                     cancelInviteMutation.isPending &&
@@ -461,7 +363,7 @@ export default function TeamPage() {
             </Card>
           )}
 
-          {activeTab === 'newSchool' && (
+          {activeTab === "newSchool" && (
             <Card className="border-border bg-card">
               <CardHeader className="text-left pb-4 border-b border-border">
                 <CardTitle>Register New School / Team</CardTitle>
@@ -483,7 +385,7 @@ export default function TeamPage() {
                       id="schoolName"
                       placeholder="e.g. West Springfield High School"
                       value={newSchoolName}
-                      onChange={e => setNewSchoolName(e.target.value)}
+                      onChange={(e) => setNewSchoolName(e.target.value)}
                       required
                     />
                   </div>
@@ -492,8 +394,8 @@ export default function TeamPage() {
                     disabled={createSchoolMutation.isPending}
                   >
                     {createSchoolMutation.isPending
-                      ? 'Onboarding...'
-                      : 'Onboard New School'}
+                      ? "Onboarding..."
+                      : "Onboard New School"}
                   </Button>
                 </CardContent>
               </form>
@@ -525,7 +427,7 @@ export default function TeamPage() {
                       type="email"
                       placeholder="teacher@school.com"
                       value={inviteEmail}
-                      onChange={e => setInviteEmail(e.target.value)}
+                      onChange={(e) => setInviteEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -540,11 +442,11 @@ export default function TeamPage() {
                     <select
                       id="inviteRole"
                       value={inviteRole}
-                      onChange={e => setInviteRole(e.target.value)}
+                      onChange={(e) => setInviteRole(e.target.value)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
                       required
                     >
-                      {availableRoles.map(role => (
+                      {availableRoles.map((role) => (
                         <option key={role.value} value={role.value}>
                           {role.label}
                         </option>
@@ -563,7 +465,7 @@ export default function TeamPage() {
                         Inviting...
                       </>
                     ) : (
-                      'Send Invite'
+                      "Send Invite"
                     )}
                   </Button>
                 </CardContent>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
+import { useClasses, useCreateClass, useDeleteClass } from "@/hooks/queries/useClasses";
 import { School, Plus, Trash2, Loader2, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,17 +12,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface SchoolClass {
-  id: string;
-  name: string;
-  section: string;
-  room_number: string | null;
-  students_count: number;
-  created_at: string;
-}
 
 export default function ClassesPage() {
-  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [section, setSection] = useState('');
@@ -35,42 +25,10 @@ export default function ClassesPage() {
     data: classes = [],
     isLoading,
     error,
-  } = useQuery<SchoolClass[]>({
-    queryKey: ['classes'],
-    queryFn: () => api.get('/api/classes').then(res => res.data),
-  });
+  } = useClasses();
 
-  const createClassMutation = useMutation({
-    mutationFn: (newClass: {
-      name: string;
-      section: string;
-      room_number?: string;
-    }) =>
-      api.post('/api/classes', JSON.stringify(newClass)).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['classes'] });
-      setIsModalOpen(false);
-      setName('');
-      setSection('');
-      setRoomNumber('');
-      setSubmitError('');
-    },
-    onError: (err: any) => {
-      setSubmitError(err.message || 'Failed to create class.');
-    },
-  });
-
-  const deleteClassMutation = useMutation({
-    mutationFn: (classId: string) =>
-      api.delete(`/api/classes/${classId}`).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['classes'] });
-      setDeleteError('');
-    },
-    onError: (err: any) => {
-      setDeleteError(err.message || 'Failed to delete class.');
-    },
-  });
+  const createClassMutation = useCreateClass();
+  const deleteClassMutation = useDeleteClass();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,11 +36,25 @@ export default function ClassesPage() {
       setSubmitError('Class name and Section are required.');
       return;
     }
-    createClassMutation.mutate({
-      name,
-      section,
-      room_number: roomNumber || undefined,
-    });
+    createClassMutation.mutate(
+      {
+        name,
+        section,
+        room_number: roomNumber || undefined,
+      },
+      {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setName('');
+          setSection('');
+          setRoomNumber('');
+          setSubmitError('');
+        },
+        onError: (err: any) => {
+          setSubmitError(err.message || 'Failed to create class.');
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -180,7 +152,10 @@ export default function ClassesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => deleteClassMutation.mutate(cls.id)}
+                    onClick={() => deleteClassMutation.mutate(cls.id, {
+                      onSuccess: () => setDeleteError(''),
+                      onError: (err: any) => setDeleteError(err.message || 'Failed to delete class.')
+                    })}
                     disabled={
                       deleteClassMutation.isPending &&
                       deleteClassMutation.variables === cls.id

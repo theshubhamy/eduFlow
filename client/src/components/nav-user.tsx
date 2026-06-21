@@ -1,4 +1,4 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentUser, useLogout } from "@/hooks/queries/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -25,7 +25,9 @@ import {
 
 export function NavUser() {
   const { isMobile } = useSidebar();
-  const { user, logout } = useAuth();
+  const { data } = useCurrentUser();
+  const user = data?.user;
+  const logoutMutation = useLogout();
   const navigate = useNavigate();
 
   if (!user) return null;
@@ -103,7 +105,7 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={logout}
+              onClick={() => logoutMutation.mutate()}
               className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
             >
               <LogOutIcon className="size-4 mr-2" />

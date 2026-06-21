@@ -1,6 +1,11 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from '@/lib/api';
+import {
+  useFees,
+  useCreateFeeCategory,
+  useAllocateFee,
+} from "@/hooks/queries/useFinance";
+import { useClasses } from "@/hooks/queries/useClasses";
+import { useStudents } from "@/hooks/queries/useStudents";
 import {
   CreditCard,
   Plus,
@@ -22,30 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface FeeCategory {
-  id: string;
-  name: string;
-  amount: number;
-  periodicity: string;
-  description: string | null;
-}
-
-interface FeeAllocation {
-  id: string;
-  fee_category: FeeCategory;
-  schoolClass: { id: string; name: string; section: string } | null;
-  student: { id: string; name: string } | null;
-  start_date: string;
-  end_date: string;
-}
-
-interface FeesResponse {
-  categories: FeeCategory[];
-  allocations: FeeAllocation[];
-}
-
 export default function FeesPage() {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"categories" | "allocations">(
     "categories",
   );
@@ -71,68 +53,20 @@ export default function FeesPage() {
   const [allocError, setAllocError] = useState("");
 
   // Fetch fees categories and allocations
-  const {
-    data: feesData,
-    isLoading: isFeesLoading,
-    error,
-  } = useQuery<FeesResponse>({
-    queryKey: ["fees"],
-    queryFn: () => api.get("/api/fees").then(res => res.data),
-  });
+  const { data: feesData, isLoading: isFeesLoading, error } = useFees();
 
   // Fetch classes for allocation dropdown
-  const { data: classes = [] } = useQuery<any[]>({
-    queryKey: ["classes"],
-    queryFn: () => api.get("/api/classes").then(res => res.data),
-    enabled: isAllocModalOpen,
-  });
+  const { data: classes = [] } = useClasses();
 
   // Fetch students for allocation dropdown
-  const { data: studentsResponse } = useQuery<any>({
-    queryKey: ["studentsListForAllocation"],
-    queryFn: () => api.get("/api/students?limit=100").then(res => res.data),
-    enabled: isAllocModalOpen && allocTargetType === "student",
-  });
+  const { data: studentsResponse } = useStudents(
+    1,
+    100,
+    isAllocModalOpen && allocTargetType === "student",
+  );
 
-  const createCategoryMutation = useMutation({
-    mutationFn: (payload: {
-      name: string;
-      amount: number;
-      periodicity: string;
-      description?: string;
-    }) =>
-      api.post("/api/fees/category", JSON.stringify(payload),).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fees"] });
-      setIsCatModalOpen(false);
-      setCatName("");
-      setCatAmount("");
-      setCatPeriod("monthly");
-      setCatDesc("");
-      setCatError("");
-    },
-    onError: (err: any) => {
-      setCatError(err.message || "Failed to create fee category.");
-    },
-  });
-
-  const allocateFeeMutation = useMutation({
-    mutationFn: (payload: any) =>
-      api.post("/api/fees/allocate", JSON.stringify(payload),).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fees"] });
-      setIsAllocModalOpen(false);
-      setAllocCategoryId("");
-      setAllocClassId("");
-      setAllocStudentId("");
-      setAllocStartDate("");
-      setAllocEndDate("");
-      setAllocError("");
-    },
-    onError: (err: any) => {
-      setAllocError(err.message || "Failed to allocate fee.");
-    },
-  });
+  const createCategoryMutation = useCreateFeeCategory();
+  const allocateFeeMutation = useAllocateFee();
 
   const handleCreateCategory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,12 +74,27 @@ export default function FeesPage() {
       setCatError("Category name and amount are required.");
       return;
     }
-    createCategoryMutation.mutate({
-      name: catName,
-      amount: parseFloat(catAmount),
-      periodicity: catPeriod,
-      description: catDesc || undefined,
-    });
+    createCategoryMutation.mutate(
+      {
+        name: catName,
+        amount: parseFloat(catAmount),
+        periodicity: catPeriod,
+        description: catDesc || undefined,
+      },
+      {
+        onSuccess: () => {
+          setIsCatModalOpen(false);
+          setCatName("");
+          setCatAmount("");
+          setCatPeriod("monthly");
+          setCatDesc("");
+          setCatError("");
+        },
+        onError: (err: any) => {
+          setCatError(err.message || "Failed to create fee category.");
+        },
+      },
+    );
   };
 
   const handleAllocateFee = (e: React.FormEvent) => {
@@ -163,13 +112,29 @@ export default function FeesPage() {
       return;
     }
 
-    allocateFeeMutation.mutate({
-      fee_category_id: allocCategoryId,
-      class_id: allocTargetType === "class" ? allocClassId : undefined,
-      student_id: allocTargetType === "student" ? allocStudentId : undefined,
-      start_date: allocStartDate,
-      end_date: allocEndDate,
-    });
+    allocateFeeMutation.mutate(
+      {
+        fee_category_id: allocCategoryId,
+        class_id: allocTargetType === "class" ? allocClassId : undefined,
+        student_id: allocTargetType === "student" ? allocStudentId : undefined,
+        start_date: allocStartDate,
+        end_date: allocEndDate,
+      },
+      {
+        onSuccess: () => {
+          setIsAllocModalOpen(false);
+          setAllocCategoryId("");
+          setAllocClassId("");
+          setAllocStudentId("");
+          setAllocStartDate("");
+          setAllocEndDate("");
+          setAllocError("");
+        },
+        onError: (err: any) => {
+          setAllocError(err.message || "Failed to allocate fee.");
+        },
+      },
+    );
   };
 
   if (isFeesLoading) {

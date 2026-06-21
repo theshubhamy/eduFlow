@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from "react";
+import { useCurrentUser } from "@/hooks/queries/useAuth";
+import {
+  useBooks,
+  useLoans,
+  useCreateBook,
+  useIssueBook,
+  useReturnBook,
+} from "@/hooks/queries/useLibrary";
+import { useStudents } from "@/hooks/queries/useStudents";
 import {
   BookOpen,
   Plus,
@@ -14,17 +20,17 @@ import {
   BookmarkCheck,
   RefreshCw,
   Coins,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Book {
   id: string;
@@ -44,162 +50,116 @@ interface StudentItem {
   };
 }
 
-interface BookLoan {
-  id: string;
-  bookId: string;
-  studentId: string;
-  loanDate: string;
-  returnDate: string | null;
-  status: string;
-  fineAmount: number;
-  book: Book;
-  student: {
-    id: string;
-    rollNumber: string | null;
-    user: {
-      name: string;
-      email: string;
-    };
-  };
-}
-
 export default function LibraryPage() {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'catalog' | 'loans'>('catalog');
-  const [searchTerm, setSearchTerm] = useState('');
+  const { data: userData } = useCurrentUser();
+  const user = userData?.user;
+  const [activeTab, setActiveTab] = useState<"catalog" | "loans">("catalog");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Catalog Book Modal Form States
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [isbn, setIsbn] = useState('');
-  const [quantity, setQuantity] = useState('1');
-  const [catError, setCatError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [isbn, setIsbn] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [catError, setCatError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Issue Book Modal Form States
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [issueError, setIssueError] = useState('');
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [issueError, setIssueError] = useState("");
 
-  const userRole = user?.role || 'member';
-  const canManage = ['owner', 'admin', 'principal', 'hod', 'faculty'].includes(
+  const userRole = user?.role || "member";
+  const canManage = ["owner", "admin", "principal", "hod", "faculty"].includes(
     userRole,
   );
 
   // Load books
-  const { data: booksRes, isLoading: isBooksLoading } = useQuery<{
-    books: Book[];
-  }>({
-    queryKey: ['books'],
-    queryFn: () => api.get('/api/library/books').then(res => res.data),
-  });
+  const { data: booksRes, isLoading: isBooksLoading } = useBooks();
 
   // Load active loans
-  const { data: loansRes, isLoading: isLoansLoading } = useQuery<{
-    loans: BookLoan[];
-  }>({
-    queryKey: ['loans'],
-    queryFn: () => api.get('/api/library/loans').then(res => res.data),
-  });
+  const { data: loansRes, isLoading: isLoansLoading } = useLoans();
 
   // Load students for dropdown selection
-  const { data: studentsRes } = useQuery<any>({
-    queryKey: ['studentsForLibrary'],
-    queryFn: () => api.get('/api/students?limit=100').then(res => res.data),
-    enabled: isIssueModalOpen,
-  });
+  const { data: studentsRes } = useStudents(1, 100, isIssueModalOpen);
 
-  const createBookMutation = useMutation({
-    mutationFn: (payload: any) =>
-      api
-        .post('/api/library/books', JSON.stringify(payload))
-        .then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['books'] });
-      setIsModalOpen(false);
-      setTitle('');
-      setAuthor('');
-      setIsbn('');
-      setQuantity('1');
-      setCatError('');
-      setSuccessMessage('Book catalogued successfully.');
-      setTimeout(() => setSuccessMessage(''), 5000);
-    },
-    onError: (err: any) => {
-      setCatError(err.message || 'Failed to catalog book.');
-    },
-  });
-
-  const issueBookMutation = useMutation({
-    mutationFn: (payload: { bookId: string; studentId: string }) =>
-      api
-        .post('/api/library/loans/issue', JSON.stringify(payload))
-        .then(res => res.data),
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['books'] });
-      queryClient.invalidateQueries({ queryKey: ['loans'] });
-      setIsIssueModalOpen(false);
-      setSelectedStudentId('');
-      setSelectedBook(null);
-      setIssueError('');
-      setSuccessMessage(data.message || 'Book issued to student.');
-      setTimeout(() => setSuccessMessage(''), 5000);
-    },
-    onError: (err: any) => {
-      setIssueError(err.message || 'Failed to issue book.');
-    },
-  });
-
-  const returnBookMutation = useMutation({
-    mutationFn: (loanId: string) =>
-      api
-        .post('/api/library/loans/return', JSON.stringify({ loanId }))
-        .then(res => res.data),
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['books'] });
-      queryClient.invalidateQueries({ queryKey: ['loans'] });
-      setSuccessMessage(data.message || 'Book returned successfully.');
-      setTimeout(() => setSuccessMessage(''), 5000);
-    },
-    onError: (err: any) => {
-      alert(err.message || 'Failed to return book.');
-    },
-  });
+  const createBookMutation = useCreateBook();
+  const issueBookMutation = useIssueBook();
+  const returnBookMutation = useReturnBook();
 
   const handleCatalogueSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !author.trim() || !quantity) {
-      setCatError('Title, Author, and Quantity are required.');
+      setCatError("Title, Author, and Quantity are required.");
       return;
     }
-    createBookMutation.mutate({
-      title,
-      author,
-      isbn: isbn || undefined,
-      quantity: parseInt(quantity, 10),
-    });
+    createBookMutation.mutate(
+      {
+        title,
+        author,
+        isbn: isbn || undefined,
+        quantity: parseInt(quantity, 10),
+      },
+      {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setTitle("");
+          setAuthor("");
+          setIsbn("");
+          setQuantity("1");
+          setCatError("");
+          setSuccessMessage("Book catalogued successfully.");
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+        onError: (err: any) => {
+          setCatError(err.message || "Failed to catalog book.");
+        },
+      },
+    );
   };
 
   const handleIssueSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBook || !selectedStudentId) {
-      setIssueError('Please select a student.');
+      setIssueError("Please select a student.");
       return;
     }
-    issueBookMutation.mutate({
-      bookId: selectedBook.id,
-      studentId: selectedStudentId,
-    });
+    issueBookMutation.mutate(
+      {
+        bookId: selectedBook.id,
+        studentId: selectedStudentId,
+      },
+      {
+        onSuccess: (data: any) => {
+          setIsIssueModalOpen(false);
+          setSelectedStudentId("");
+          setSelectedBook(null);
+          setIssueError("");
+          setSuccessMessage(data.message || "Book issued to student.");
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+        onError: (err: any) => {
+          setIssueError(err.message || "Failed to issue book.");
+        },
+      },
+    );
   };
 
   const handleReturnBook = (loanId: string) => {
     if (
-      confirm('Are you sure you want to log return check-in for this book?')
+      confirm("Are you sure you want to log return check-in for this book?")
     ) {
-      returnBookMutation.mutate(loanId);
+      returnBookMutation.mutate(loanId, {
+        onSuccess: (data: any) => {
+          setSuccessMessage(data.message || "Book returned successfully.");
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+        onError: (err: any) => {
+          alert(err.message || "Failed to return book.");
+        },
+      });
     }
   };
 
@@ -208,7 +168,7 @@ export default function LibraryPage() {
   const students = studentsRes?.data || [];
 
   const filteredBooks = books.filter(
-    b =>
+    (b) =>
       b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (b.isbn && b.isbn.includes(searchTerm)),
@@ -245,21 +205,21 @@ export default function LibraryPage() {
       {/* Tabs */}
       <div className="flex border-b border-border gap-4">
         <button
-          onClick={() => setActiveTab('catalog')}
+          onClick={() => setActiveTab("catalog")}
           className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === 'catalog'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+            activeTab === "catalog"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Book Inventory ({books.length})
         </button>
         <button
-          onClick={() => setActiveTab('loans')}
+          onClick={() => setActiveTab("loans")}
           className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === 'loans'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+            activeTab === "loans"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Active Loans & History ({loans.length})
@@ -267,14 +227,14 @@ export default function LibraryPage() {
       </div>
 
       {/* Inventory Catalog Tab */}
-      {activeTab === 'catalog' && (
+      {activeTab === "catalog" && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 max-w-sm border border-input rounded-md px-3 bg-background">
             <Search className="size-4 text-muted-foreground shrink-0" />
             <Input
               placeholder="Search books by title, author, or ISBN..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0 h-10"
             />
           </div>
@@ -315,11 +275,11 @@ export default function LibraryPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredBooks.map(book => {
+                      {filteredBooks.map((book) => {
                         const isAvailable = book.available > 0;
                         const qtyColor = isAvailable
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20'
-                          : 'bg-destructive/10 text-destructive border border-destructive/20 font-semibold';
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20"
+                          : "bg-destructive/10 text-destructive border border-destructive/20 font-semibold";
 
                         return (
                           <tr
@@ -333,7 +293,7 @@ export default function LibraryPage() {
                               {book.author}
                             </td>
                             <td className="p-4 font-mono text-xs">
-                              {book.isbn || 'N/A'}
+                              {book.isbn || "N/A"}
                             </td>
                             <td className="p-4 text-center text-foreground font-semibold">
                               {book.quantity}
@@ -375,7 +335,7 @@ export default function LibraryPage() {
       )}
 
       {/* Loans Checkouts Tab */}
-      {activeTab === 'loans' && (
+      {activeTab === "loans" && (
         <div className="space-y-4">
           {isLoansLoading ? (
             <div className="space-y-3">
@@ -415,13 +375,13 @@ export default function LibraryPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {loans.map(loan => {
+                      {loans.map((loan) => {
                         const issueDate = new Date(loan.loanDate);
                         // Due date: 14 days after issue date
                         const dueDate = new Date(
                           issueDate.getTime() + 14 * 24 * 60 * 60 * 1000,
                         );
-                        const isReturned = loan.status === 'returned';
+                        const isReturned = loan.status === "returned";
 
                         // Calculate live fine preview if not returned yet
                         let liveFine = loan.fineAmount;
@@ -437,10 +397,10 @@ export default function LibraryPage() {
                         }
 
                         const statusColor = isReturned
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20'
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20"
                           : liveFine > 0
-                            ? 'bg-destructive/10 text-destructive border border-destructive/20 font-bold animate-pulse'
-                            : 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border border-amber-500/20';
+                            ? "bg-destructive/10 text-destructive border border-destructive/20 font-bold animate-pulse"
+                            : "bg-amber-500/10 text-amber-600 dark:text-amber-500 border border-amber-500/20";
 
                         return (
                           <tr
@@ -455,7 +415,7 @@ export default function LibraryPage() {
                                 {loan.student.user.name}
                               </div>
                               <div className="text-[10px] text-muted-foreground">
-                                Roll: {loan.student.rollNumber || 'N/A'}
+                                Roll: {loan.student.rollNumber || "N/A"}
                               </div>
                             </td>
                             <td className="p-4">
@@ -467,17 +427,17 @@ export default function LibraryPage() {
                             <td className="p-4 text-muted-foreground">
                               {loan.returnDate
                                 ? new Date(loan.returnDate).toLocaleDateString()
-                                : '-'}
+                                : "-"}
                             </td>
                             <td className="p-4 text-center">
                               <span
                                 className={`inline-flex items-center rounded-full px-2 py-0.2 text-[10px] font-semibold capitalize ${statusColor}`}
                               >
                                 {isReturned
-                                  ? 'Returned'
+                                  ? "Returned"
                                   : liveFine > 0
-                                    ? 'Overdue'
-                                    : 'Issued'}
+                                    ? "Overdue"
+                                    : "Issued"}
                               </span>
                             </td>
                             <td className="p-4 text-right font-semibold text-foreground">
@@ -487,7 +447,7 @@ export default function LibraryPage() {
                                   {liveFine.toFixed(2)}
                                 </span>
                               ) : (
-                                '$0.00'
+                                "$0.00"
                               )}
                             </td>
                             {canManage && (
@@ -556,7 +516,7 @@ export default function LibraryPage() {
                     id="bookTitle"
                     placeholder="e.g. Introduction to Algorithms, Physics Part 1"
                     value={title}
-                    onChange={e => setTitle(e.target.value)}
+                    onChange={(e) => setTitle(e.target.value)}
                     required
                   />
                 </div>
@@ -572,7 +532,7 @@ export default function LibraryPage() {
                     id="bookAuthor"
                     placeholder="e.g. Thomas H. Cormen, Stephen Hawking"
                     value={author}
-                    onChange={e => setAuthor(e.target.value)}
+                    onChange={(e) => setAuthor(e.target.value)}
                     required
                   />
                 </div>
@@ -589,7 +549,7 @@ export default function LibraryPage() {
                       id="bookIsbn"
                       placeholder="e.g. 9780262033848"
                       value={isbn}
-                      onChange={e => setIsbn(e.target.value)}
+                      onChange={(e) => setIsbn(e.target.value)}
                     />
                   </div>
 
@@ -606,7 +566,7 @@ export default function LibraryPage() {
                       min="1"
                       placeholder="1"
                       value={quantity}
-                      onChange={e => setQuantity(e.target.value)}
+                      onChange={(e) => setQuantity(e.target.value)}
                       required
                     />
                   </div>
@@ -628,7 +588,7 @@ export default function LibraryPage() {
                       Saving...
                     </>
                   ) : (
-                    'Add Book'
+                    "Add Book"
                   )}
                 </Button>
               </div>
@@ -646,7 +606,7 @@ export default function LibraryPage() {
                 Issue Book Volume
               </CardTitle>
               <CardDescription>
-                Assign copy of <strong>{selectedBook.title}</strong> by{' '}
+                Assign copy of <strong>{selectedBook.title}</strong> by{" "}
                 {selectedBook.author} to a student borrower.
               </CardDescription>
               <Button
@@ -654,7 +614,7 @@ export default function LibraryPage() {
                 size="icon"
                 onClick={() => {
                   setIsIssueModalOpen(false);
-                  setSelectedStudentId('');
+                  setSelectedStudentId("");
                   setSelectedBook(null);
                 }}
                 className="absolute top-4 right-4 text-muted-foreground hover:bg-muted cursor-pointer"
@@ -682,14 +642,14 @@ export default function LibraryPage() {
                   <select
                     id="issueStudentSelect"
                     value={selectedStudentId}
-                    onChange={e => setSelectedStudentId(e.target.value)}
+                    onChange={(e) => setSelectedStudentId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Choose Student Borrower...</option>
                     {students.map((s: StudentItem) => (
                       <option key={s.id} value={s.id}>
-                        {s.user.name} (Roll: #{s.rollNumber || 'N/A'}) -{' '}
+                        {s.user.name} (Roll: #{s.rollNumber || "N/A"}) -{" "}
                         {s.user.email}
                       </option>
                     ))}
@@ -712,7 +672,7 @@ export default function LibraryPage() {
                   variant="outline"
                   onClick={() => {
                     setIsIssueModalOpen(false);
-                    setSelectedStudentId('');
+                    setSelectedStudentId("");
                     setSelectedBook(null);
                   }}
                 >
@@ -725,7 +685,7 @@ export default function LibraryPage() {
                       Issuing...
                     </>
                   ) : (
-                    'Confirm Issue'
+                    "Confirm Issue"
                   )}
                 </Button>
               </div>

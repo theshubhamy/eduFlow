@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRegister } from "@/hooks/queries/useAuth";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export default function RegisterPage() {
-  const { register } = useAuth();
+  const registerMutation = useRegister();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,10 +28,10 @@ export default function RegisterPage() {
     setLoading(true);
     setErrorMsg("");
     try {
-      await register(name, email, password, schoolName);
+      await registerMutation.mutateAsync({ name, email, password, company_name: schoolName });
       navigate("/dashboard");
-    } catch (err: any) {
-      setErrorMsg(err.message || "Registration failed. Please try again.");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }

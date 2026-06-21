@@ -1,112 +1,105 @@
-import React, { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Check, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import { Loader2, Check, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useCurrentUser } from "@/hooks/queries/useAuth";
+import {
+  useUpdateProfile,
+  useChangePassword,
+  useDeleteAccount,
+} from "@/hooks/queries/useProfile";
 
 export default function SettingsPage() {
-  const { user, refreshUser, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'danger'>(
-    'profile',
+  const { data: userData } = useCurrentUser();
+  const user = userData?.user;
+
+  const [activeTab, setActiveTab] = useState<"profile" | "password" | "danger">(
+    "profile",
   );
 
   // Profile Form States
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [profileSuccess, setProfileSuccess] = useState('');
-  const [profileError, setProfileError] = useState('');
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [profileError, setProfileError] = useState("");
 
   // Password Form States
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
-  const [deleteError, setDeleteError] = useState('');
+  const [deleteError, setDeleteError] = useState("");
 
-  // Update profile details mutation
-  const updateProfileMutation = useMutation({
-    mutationFn: (payload: { name: string; email: string }) =>
-      api
-        .patch('/api/auth/profile', JSON.stringify(payload))
-        .then(res => res.data),
-    onSuccess: data => {
-      refreshUser();
-      setProfileSuccess(data.message || 'Profile updated successfully.');
-      setProfileError('');
-    },
-    onError: (err: any) => {
-      setProfileError(err.message || 'Failed to update profile.');
-      setProfileSuccess('');
-    },
-  });
-
-  // Change password mutation
-  const changePasswordMutation = useMutation({
-    mutationFn: (payload: any) =>
-      api
-        .put('/api/auth/password', JSON.stringify(payload))
-        .then(res => res.data),
-    onSuccess: data => {
-      setPasswordSuccess(data.message || 'Password updated successfully.');
-      setCurrentPassword('');
-      setNewPassword('');
-      setPasswordError('');
-    },
-    onError: (err: any) => {
-      setPasswordError(err.message || 'Failed to update password.');
-      setPasswordSuccess('');
-    },
-  });
-
-  // Delete account mutation
-  const deleteAccountMutation = useMutation({
-    mutationFn: () => api.delete('/api/auth/profile').then(res => res.data),
-    onSuccess: () => {
-      logout();
-    },
-    onError: (err: any) => {
-      setDeleteError(err.message || 'Failed to delete account.');
-    },
-  });
+  const updateProfileMutation = useUpdateProfile();
+  const changePasswordMutation = useChangePassword();
+  const deleteAccountMutation = useDeleteAccount();
 
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) {
-      setProfileError('Name and email are required.');
+      setProfileError("Name and email are required.");
       return;
     }
-    updateProfileMutation.mutate({ name, email });
+    updateProfileMutation.mutate(
+      { name, email },
+      {
+        onSuccess: (data: any) => {
+          setProfileSuccess(data.message || "Profile updated successfully.");
+          setProfileError("");
+        },
+        onError: (err: any) => {
+          setProfileError(err.message || "Failed to update profile.");
+          setProfileSuccess("");
+        },
+      }
+    );
   };
 
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword || !newPassword) {
-      setPasswordError('Both current password and new password are required.');
+      setPasswordError("Both current password and new password are required.");
       return;
     }
-    changePasswordMutation.mutate({
-      current_password: currentPassword,
-      password: newPassword,
-    });
+    changePasswordMutation.mutate(
+      {
+        current_password: currentPassword,
+        password: newPassword,
+      },
+      {
+        onSuccess: (data: any) => {
+          setPasswordSuccess(data.message || "Password updated successfully.");
+          setCurrentPassword("");
+          setNewPassword("");
+          setPasswordError("");
+        },
+        onError: (err: any) => {
+          setPasswordError(err.message || "Failed to update password.");
+          setPasswordSuccess("");
+        },
+      }
+    );
   };
 
   const handleDeleteAccount = () => {
     if (
       confirm(
-        'Are you absolutely sure you want to delete your account? This action is permanent and cannot be undone.',
+        "Are you absolutely sure you want to delete your account? This action is permanent and cannot be undone.",
       )
     ) {
-      deleteAccountMutation.mutate();
+      deleteAccountMutation.mutate(undefined, {
+        onError: (err: any) => {
+          setDeleteError(err.message || "Failed to delete account.");
+        },
+      });
     }
   };
 
@@ -126,31 +119,31 @@ export default function SettingsPage() {
         {/* Navigation Sidebar */}
         <div className="md:col-span-1 flex flex-col gap-1 border-r border-border pr-6 text-left">
           <button
-            onClick={() => setActiveTab('profile')}
+            onClick={() => setActiveTab("profile")}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-              activeTab === 'profile'
-                ? 'bg-primary/10 text-primary'
-                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+              activeTab === "profile"
+                ? "bg-primary/10 text-primary"
+                : "hover:bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >
             Profile Information
           </button>
           <button
-            onClick={() => setActiveTab('password')}
+            onClick={() => setActiveTab("password")}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-              activeTab === 'password'
-                ? 'bg-primary/10 text-primary'
-                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+              activeTab === "password"
+                ? "bg-primary/10 text-primary"
+                : "hover:bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >
             Update Password
           </button>
           <button
-            onClick={() => setActiveTab('danger')}
+            onClick={() => setActiveTab("danger")}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-              activeTab === 'danger'
-                ? 'bg-destructive/10 text-destructive'
-                : 'hover:bg-destructive/5 text-muted-foreground hover:text-destructive'
+              activeTab === "danger"
+                ? "bg-destructive/10 text-destructive"
+                : "hover:bg-destructive/5 text-muted-foreground hover:text-destructive"
             }`}
           >
             Danger Zone
@@ -160,7 +153,7 @@ export default function SettingsPage() {
         {/* Content Console */}
         <div className="md:col-span-3">
           {/* Profile Form */}
-          {activeTab === 'profile' && (
+          {activeTab === "profile" && (
             <Card className="border-border bg-card">
               <CardHeader className="text-left pb-4 border-b border-border">
                 <CardTitle>Profile Details</CardTitle>
@@ -198,7 +191,7 @@ export default function SettingsPage() {
                     <Input
                       id="profName"
                       value={name}
-                      onChange={e => setName(e.target.value)}
+                      onChange={(e) => setName(e.target.value)}
                       required
                     />
                   </div>
@@ -214,7 +207,7 @@ export default function SettingsPage() {
                       id="profEmail"
                       type="email"
                       value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      onChange={(e) => setEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -230,7 +223,7 @@ export default function SettingsPage() {
                         Saving...
                       </>
                     ) : (
-                      'Save Details'
+                      "Save Details"
                     )}
                   </Button>
                 </CardContent>
@@ -239,7 +232,7 @@ export default function SettingsPage() {
           )}
 
           {/* Password Form */}
-          {activeTab === 'password' && (
+          {activeTab === "password" && (
             <Card className="border-border bg-card">
               <CardHeader className="text-left pb-4 border-b border-border">
                 <CardTitle>Change Password</CardTitle>
@@ -279,7 +272,7 @@ export default function SettingsPage() {
                       type="password"
                       placeholder="Enter your current password"
                       value={currentPassword}
-                      onChange={e => setCurrentPassword(e.target.value)}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
                       required
                     />
                   </div>
@@ -296,7 +289,7 @@ export default function SettingsPage() {
                       type="password"
                       placeholder="At least 6 characters"
                       value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
+                      onChange={(e) => setNewPassword(e.target.value)}
                       required
                     />
                   </div>
@@ -312,7 +305,7 @@ export default function SettingsPage() {
                         Changing...
                       </>
                     ) : (
-                      'Change Password'
+                      "Change Password"
                     )}
                   </Button>
                 </CardContent>
@@ -321,7 +314,7 @@ export default function SettingsPage() {
           )}
 
           {/* Danger Zone */}
-          {activeTab === 'danger' && (
+          {activeTab === "danger" && (
             <Card className="border-destructive/20 bg-destructive/5">
               <CardHeader className="text-left pb-4 border-b border-destructive/10">
                 <CardTitle className="text-destructive">Danger Zone</CardTitle>
@@ -362,7 +355,7 @@ export default function SettingsPage() {
                         Deleting Account...
                       </>
                     ) : (
-                      'Delete My Account'
+                      "Delete My Account"
                     )}
                   </Button>
                 </div>

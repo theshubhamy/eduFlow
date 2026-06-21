@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from '@/lib/api';
-import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentUser } from "@/hooks/queries/useAuth";
+import {
+  useLeaves,
+  useApplyLeave,
+  useReviewLeave,
+} from "@/hooks/queries/useLeaves";
 import {
   Plus,
   X,
@@ -24,31 +27,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface LeaveRequest {
-  id: string;
-  type: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  status: string;
-  user: {
-    name: string;
-    email: string;
-  };
-  approvedBy: {
-    name: string;
-  } | null;
-  createdAt: string;
-}
-
-interface LeavesResponse {
-  leaves: LeaveRequest[];
-  isManager: boolean;
-}
-
 export default function LeavesPage() {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { data: userData } = useCurrentUser();
+  const user = userData?.user;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"myLeaves" | "review">("myLeaves");
 
@@ -60,51 +41,10 @@ export default function LeavesPage() {
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const { data, isLoading, error } = useQuery<LeavesResponse>({
-    queryKey: ["leaves"],
-    queryFn: () => api.get("/api/leaves").then(res => res.data),
-  });
+  const { data, isLoading, error } = useLeaves();
 
-  const applyLeaveMutation = useMutation({
-    mutationFn: (payload: {
-      type: string;
-      startDate: string;
-      endDate: string;
-      reason: string;
-    }) =>
-      api.post("/api/leaves", JSON.stringify(payload),).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["leaves"] });
-      setIsModalOpen(false);
-      setLeaveType("sick");
-      setStartDate("");
-      setEndDate("");
-      setReason("");
-      setSubmitError("");
-      setSuccessMessage("Leave application submitted successfully.");
-      setTimeout(() => setSuccessMessage(""), 5000);
-    },
-    onError: (err: any) => {
-      setSubmitError(err.message || "Failed to submit leave request.");
-    },
-  });
-
-  const reviewLeaveMutation = useMutation({
-    mutationFn: (payload: {
-      leaveId: string;
-      status: "approved" | "rejected";
-    }) =>
-      api.post("/api/leaves/approve", JSON.stringify(payload),).then(res => res.data),
-    onSuccess: (resData: any) => {
-      queryClient.invalidateQueries({ queryKey: ["leaves"] });
-      setSuccessMessage(resData.message || "Leave request status updated.");
-      setTimeout(() => setSuccessMessage(""), 5000);
-    },
-    onError: (err: any) => {
-      setSuccessMessage("");
-      alert(err.message || "Failed to update leave request.");
-    },
-  });
+  const applyLeaveMutation = useApplyLeave();
+  const reviewLeaveMutation = useReviewLeave();
 
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,11 +52,40 @@ export default function LeavesPage() {
       setSubmitError("All fields are required.");
       return;
     }
-    applyLeaveMutation.mutate({ type: leaveType, startDate, endDate, reason });
+    applyLeaveMutation.mutate(
+      { type: leaveType, startDate, endDate, reason },
+      {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setLeaveType("sick");
+          setStartDate("");
+          setEndDate("");
+          setReason("");
+          setSubmitError("");
+          setSuccessMessage("Leave application submitted successfully.");
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+        onError: (err: any) => {
+          setSubmitError(err.message || "Failed to submit leave request.");
+        },
+      },
+    );
   };
 
   const handleReview = (leaveId: string, status: "approved" | "rejected") => {
-    reviewLeaveMutation.mutate({ leaveId, status });
+    reviewLeaveMutation.mutate(
+      { leaveId, status },
+      {
+        onSuccess: (resData: any) => {
+          setSuccessMessage(resData.message || "Leave request status updated.");
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+        onError: (err: any) => {
+          setSuccessMessage("");
+          alert(err.message || "Failed to update leave request.");
+        },
+      },
+    );
   };
 
   if (isLoading) {

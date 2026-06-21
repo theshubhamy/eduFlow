@@ -1,44 +1,22 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from '@/lib/api';
+import {
+  useStudents,
+  useAdmissionClasses,
+  useAdmitStudent,
+} from "@/hooks/queries/useStudents";
 import { Users, Plus, Loader2, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface Student {
-  id: string;
-  rollNumber: string;
-  admissionDate: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  schoolClass: {
-    id: string;
-    name: string;
-    section: string;
-  };
-}
-
-interface StudentsPaginatedResponse {
-  data: Student[];
-  current_page: number;
-  per_page: number;
-  total: number;
-  last_page: number;
-}
-
-interface ClassOption {
-  id: string;
-  name: string;
-  section: string;
-}
-
 export default function StudentsPage() {
-  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -51,50 +29,55 @@ export default function StudentsPage() {
   const [admissionDate, setAdmissionDate] = useState("");
   const [submitError, setSubmitError] = useState("");
 
-  const { data: response, isLoading: isStudentsLoading, error } = useQuery<StudentsPaginatedResponse>({
-    queryKey: ["students", currentPage],
-    queryFn: () => api.get(`/api/students?page=${currentPage}&limit=10`).then(res => res.data),
-  });
+  const {
+    data: response,
+    isLoading: isStudentsLoading,
+    error,
+  } = useStudents(currentPage, 10);
 
-  const { data: classes = [], isLoading: isClassesLoading } = useQuery<ClassOption[]>({
-    queryKey: ["admissionClasses"],
-    queryFn: () => api.get("/api/students/create").then(res => res.data),
-    enabled: isModalOpen, // Only fetch options when the modal is opened
-  });
+  const { data: classes = [], isLoading: isClassesLoading } =
+    useAdmissionClasses(isModalOpen);
 
-  const admitStudentMutation = useMutation({
-    mutationFn: (newStudent: any) =>
-      api.post("/api/students", JSON.stringify(newStudent),).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["students"] });
-      setIsModalOpen(false);
-      setName("");
-      setEmail("");
-      setPassword("");
-      setClassId("");
-      setRollNumber("");
-      setAdmissionDate("");
-      setSubmitError("");
-    },
-    onError: (err: any) => {
-      setSubmitError(err.message || "Failed to admit student.");
-    },
-  });
+  const admitStudentMutation = useAdmitStudent();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim() || !classId || !rollNumber.trim() || !admissionDate) {
+    if (
+      !name.trim() ||
+      !email.trim() ||
+      !password.trim() ||
+      !classId ||
+      !rollNumber.trim() ||
+      !admissionDate
+    ) {
       setSubmitError("All fields are required.");
       return;
     }
-    admitStudentMutation.mutate({
-      name,
-      email,
-      password,
-      class_id: classId,
-      roll_number: rollNumber,
-      admission_date: admissionDate,
-    });
+    admitStudentMutation.mutate(
+      {
+        name,
+        email,
+        password,
+        class_id: classId,
+        roll_number: rollNumber,
+        admission_date: admissionDate,
+      },
+      {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setName("");
+          setEmail("");
+          setPassword("");
+          setClassId("");
+          setRollNumber("");
+          setAdmissionDate("");
+          setSubmitError("");
+        },
+        onError: (err: any) => {
+          setSubmitError(err.message || "Failed to admit student.");
+        },
+      },
+    );
   };
 
   if (isStudentsLoading) {
@@ -127,7 +110,9 @@ export default function StudentsPage() {
     return (
       <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-6 text-destructive">
         <h2 className="text-lg font-bold">Error loading Students</h2>
-        <p className="text-sm mt-1">{error instanceof Error ? error.message : "Something went wrong."}</p>
+        <p className="text-sm mt-1">
+          {error instanceof Error ? error.message : "Something went wrong."}
+        </p>
       </div>
     );
   }
@@ -139,9 +124,12 @@ export default function StudentsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-left">Students</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-left">
+            Students
+          </h1>
           <p className="text-muted-foreground text-left text-sm mt-1">
-            Browse your school's student directory and perform new student admissions.
+            Browse your school's student directory and perform new student
+            admissions.
           </p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="cursor-pointer">
@@ -155,11 +143,17 @@ export default function StudentsPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
             <Users className="size-6" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground">No Students Registered</h3>
+          <h3 className="font-semibold text-lg text-foreground">
+            No Students Registered
+          </h3>
           <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-sm text-center">
-            Admit your first student and map them to their respective class and section.
+            Admit your first student and map them to their respective class and
+            section.
           </p>
-          <Button onClick={() => setIsModalOpen(true)} className="cursor-pointer">
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            className="cursor-pointer"
+          >
             <Plus className="size-4 mr-2" />
             Admit First Student
           </Button>
@@ -181,21 +175,33 @@ export default function StudentsPage() {
                   </thead>
                   <tbody>
                     {students.map((student) => (
-                      <tr key={student.id} className="border-b border-border/50 hover:bg-muted/30 transition-all">
-                        <td className="p-4 font-mono font-bold text-foreground">#{student.rollNumber}</td>
-                        <td className="p-4 font-semibold text-foreground">{student.user.name}</td>
-                        <td className="p-4 text-muted-foreground">{student.user.email}</td>
+                      <tr
+                        key={student.id}
+                        className="border-b border-border/50 hover:bg-muted/30 transition-all"
+                      >
+                        <td className="p-4 font-mono font-bold text-foreground">
+                          #{student.rollNumber}
+                        </td>
+                        <td className="p-4 font-semibold text-foreground">
+                          {student.user.name}
+                        </td>
+                        <td className="p-4 text-muted-foreground">
+                          {student.user.email}
+                        </td>
                         <td className="p-4 text-foreground">
                           {student.schoolClass
                             ? `${student.schoolClass.name} (${student.schoolClass.section})`
                             : "Unassigned"}
                         </td>
                         <td className="p-4 text-muted-foreground">
-                          {new Date(student.admissionDate).toLocaleDateString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {new Date(student.admissionDate).toLocaleDateString(
+                            undefined,
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -223,7 +229,9 @@ export default function StudentsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="cursor-pointer"
               >
@@ -240,7 +248,9 @@ export default function StudentsPage() {
           <Card className="w-full max-w-lg bg-card border-border my-8 animate-in fade-in zoom-in-95 duration-200">
             <CardHeader className="relative text-left pb-4 border-b border-border">
               <CardTitle className="text-xl">Admit New Student</CardTitle>
-              <CardDescription>Setup their personal details, academic class, and credentials.</CardDescription>
+              <CardDescription>
+                Setup their personal details, academic class, and credentials.
+              </CardDescription>
               <Button
                 variant="ghost"
                 size="icon"
@@ -262,7 +272,10 @@ export default function StudentsPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="studentName" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="studentName"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       Full Name *
                     </label>
                     <Input
@@ -275,7 +288,10 @@ export default function StudentsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="studentEmail" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="studentEmail"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       Email Address *
                     </label>
                     <Input
@@ -291,7 +307,10 @@ export default function StudentsPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="studentPass" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="studentPass"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       Account Password *
                     </label>
                     <Input
@@ -305,7 +324,10 @@ export default function StudentsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="rollNo" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="rollNo"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       Roll Number *
                     </label>
                     <Input
@@ -320,13 +342,18 @@ export default function StudentsPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="studentClass" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="studentClass"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       Class Room *
                     </label>
                     {isClassesLoading ? (
                       <div className="flex items-center h-10 border border-input rounded-md px-3 bg-muted/30">
                         <Loader2 className="size-4 animate-spin text-muted-foreground mr-2" />
-                        <span className="text-sm text-muted-foreground">Loading classes...</span>
+                        <span className="text-sm text-muted-foreground">
+                          Loading classes...
+                        </span>
                       </div>
                     ) : (
                       <select
@@ -347,7 +374,10 @@ export default function StudentsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="adminDate" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="adminDate"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       Admission Date *
                     </label>
                     <Input

@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
+import { useClasses } from "@/hooks/queries/useClasses";
+import { useSubjects } from "@/hooks/queries/useSubjects";
+import {
+  useTimetable,
+  useCreateTimetableEntry,
+  useDeleteTimetableEntry,
+} from "@/hooks/queries/useTimetable";
 import {
   Calendar,
   Plus,
@@ -13,30 +19,18 @@ import {
   MapPin,
   User,
   BookOpen,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-
-interface ClassItem {
-  id: string;
-  name: string;
-  section: string;
-}
-
-interface SubjectItem {
-  id: string;
-  name: string;
-  code: string;
-  classId: string;
-}
+} from "@/components/ui/card";
+import { useCurrentUser } from "@/hooks/queries/useAuth";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MemberItem {
   id: string;
@@ -44,145 +38,100 @@ interface MemberItem {
   role: string;
 }
 
-interface TimetableEntry {
-  id: string;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  room: string | null;
-  schoolClass: {
-    name: string;
-    section: string;
-  };
-  subject: {
-    name: string;
-    code: string;
-  };
-  teacher: {
-    name: string;
-  } | null;
-}
-
-interface TimetableResponse {
-  entries: TimetableEntry[];
-}
-
 const DAYS_OF_WEEK = [
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
 ];
 
 export default function TimetablePage() {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const [selectedClassId, setSelectedClassId] = useState('');
+  const { data: userData } = useCurrentUser();
+  const user = userData?.user;
+  const [selectedClassId, setSelectedClassId] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form States
-  const [classId, setClassId] = useState('');
-  const [subjectId, setSubjectId] = useState('');
-  const [teacherId, setTeacherId] = useState('');
-  const [dayOfWeek, setDayOfWeek] = useState('1');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [room, setRoom] = useState('');
-  const [submitError, setSubmitError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [classId, setClassId] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+  const [teacherId, setTeacherId] = useState("");
+  const [dayOfWeek, setDayOfWeek] = useState("1");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [room, setRoom] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const userRole = user?.role || 'member';
-  const isManager = ['owner', 'admin', 'principal'].includes(userRole);
+  const userRole = user?.role || "member";
+  const isManager = ["owner", "admin", "principal"].includes(userRole);
 
   // Load Classes
-  const { data: classesData = [], isLoading: isClassesLoading } = useQuery<
-    ClassItem[]
-  >({
-    queryKey: ['classes'],
-    queryFn: () => api.get('/api/classes').then(res => res.data),
-  });
+  const { data: classesData = [], isLoading: isClassesLoading } = useClasses();
 
   // Load Subjects
-  const { data: subjectsData = [] } = useQuery<SubjectItem[]>({
-    queryKey: ['subjects'],
-    queryFn: () => api.get('/api/subjects').then(res => res.data),
-  });
+  const { data: subjectsData = [] } = useSubjects();
 
   // Load Staff
   const { data: membersRes } = useQuery<{ members: MemberItem[] }>({
-    queryKey: ['members'],
-    queryFn: () => api.get('/api/members').then(res => res.data),
+    queryKey: ["members"],
+    queryFn: () => api.get("/api/members").then((res) => res.data),
     enabled: isModalOpen,
   });
 
   // Load Timetable Entries
   const { data: timetableRes, isLoading: isTimetableLoading } =
-    useQuery<TimetableResponse>({
-      queryKey: ['timetable', selectedClassId],
-      queryFn: () =>
-        api
-          .get(`/api/timetable?class_id=${selectedClassId}`)
-          .then(res => res.data),
-    });
+    useTimetable(selectedClassId);
 
-  const createTimetableMutation = useMutation({
-    mutationFn: (payload: any) =>
-      api.post('/api/timetable', JSON.stringify(payload)).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['timetable', selectedClassId],
-      });
-      setIsModalOpen(false);
-      setClassId('');
-      setSubjectId('');
-      setTeacherId('');
-      setDayOfWeek('1');
-      setStartTime('');
-      setEndTime('');
-      setRoom('');
-      setSubmitError('');
-      setSuccessMessage('Timetable entry added successfully.');
-      setTimeout(() => setSuccessMessage(''), 5000);
-    },
-    onError: (err: any) => {
-      setSubmitError(err.message || 'Failed to add timetable entry.');
-    },
-  });
-
-  const deleteTimetableMutation = useMutation({
-    mutationFn: (id: string) =>
-      api.delete(`/api/timetable/${id}`).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['timetable', selectedClassId],
-      });
-      setSuccessMessage('Timetable entry deleted successfully.');
-      setTimeout(() => setSuccessMessage(''), 5000);
-    },
-  });
+  const createTimetableMutation = useCreateTimetableEntry(selectedClassId);
+  const deleteTimetableMutation = useDeleteTimetableEntry(selectedClassId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!classId || !subjectId || !dayOfWeek || !startTime || !endTime) {
-      setSubmitError('Please fill out all required fields.');
+      setSubmitError("Please fill out all required fields.");
       return;
     }
-    createTimetableMutation.mutate({
-      classId,
-      subjectId,
-      teacherId: teacherId || undefined,
-      dayOfWeek: parseInt(dayOfWeek, 10),
-      startTime,
-      endTime,
-      room: room || undefined,
-    });
+    createTimetableMutation.mutate(
+      {
+        classId,
+        subjectId,
+        teacherId: teacherId || undefined,
+        dayOfWeek: parseInt(dayOfWeek, 10),
+        startTime,
+        endTime,
+        room: room || undefined,
+      },
+      {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setClassId("");
+          setSubjectId("");
+          setTeacherId("");
+          setDayOfWeek("1");
+          setStartTime("");
+          setEndTime("");
+          setRoom("");
+          setSubmitError("");
+          setSuccessMessage("Timetable entry added successfully.");
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+        onError: (err: any) => {
+          setSubmitError(err.message || "Failed to add timetable entry.");
+        },
+      },
+    );
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this timetable entry?')) {
-      deleteTimetableMutation.mutate(id);
+    if (confirm("Are you sure you want to delete this timetable entry?")) {
+      deleteTimetableMutation.mutate(id, {
+        onSuccess: () => {
+          setSuccessMessage("Timetable entry deleted successfully.");
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+      });
     }
   };
 
@@ -233,11 +182,11 @@ export default function TimetablePage() {
               <select
                 id="filterClass"
                 value={selectedClassId}
-                onChange={e => setSelectedClassId(e.target.value)}
+                onChange={(e) => setSelectedClassId(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               >
                 <option value="">All Timetable Classes</option>
-                {classesData.map(c => (
+                {classesData.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} - {c.section}
                   </option>
@@ -270,8 +219,8 @@ export default function TimetablePage() {
         </Card>
       ) : (
         <div className="grid gap-6">
-          {DAYS_OF_WEEK.map(day => {
-            const dayEntries = entries.filter(e => e.dayOfWeek === day.value);
+          {DAYS_OF_WEEK.map((day) => {
+            const dayEntries = entries.filter((e) => e.dayOfWeek === day.value);
             if (dayEntries.length === 0 && selectedClassId) return null; // hide empty days when filtering by specific class
 
             return (
@@ -288,7 +237,7 @@ export default function TimetablePage() {
                     </div>
                   ) : (
                     <div className="divide-y divide-border/60">
-                      {dayEntries.map(entry => (
+                      {dayEntries.map((entry) => (
                         <div
                           key={entry.id}
                           className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 gap-4 hover:bg-muted/10 transition-colors"
@@ -299,7 +248,7 @@ export default function TimetablePage() {
                                 {entry.startTime} - {entry.endTime}
                               </span>
                               <span className="text-xs text-muted-foreground">
-                                (Class: {entry.schoolClass.name} -{' '}
+                                (Class: {entry.schoolClass.name} -{" "}
                                 {entry.schoolClass.section})
                               </span>
                             </div>
@@ -310,7 +259,7 @@ export default function TimetablePage() {
                               </span>
                               <span className="flex items-center gap-1">
                                 <User className="size-3 text-blue-500" />
-                                {entry.teacher?.name || 'No teacher assigned'}
+                                {entry.teacher?.name || "No teacher assigned"}
                               </span>
                               {entry.room && (
                                 <span className="flex items-center gap-1">
@@ -380,12 +329,12 @@ export default function TimetablePage() {
                   <select
                     id="entryClass"
                     value={classId}
-                    onChange={e => setClassId(e.target.value)}
+                    onChange={(e) => setClassId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Select Classroom...</option>
-                    {classesData.map(c => (
+                    {classesData.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name} - {c.section}
                       </option>
@@ -403,14 +352,14 @@ export default function TimetablePage() {
                   <select
                     id="entrySubject"
                     value={subjectId}
-                    onChange={e => setSubjectId(e.target.value)}
+                    onChange={(e) => setSubjectId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Select Subject...</option>
                     {subjectsData
-                      .filter(s => !classId || s.classId === classId)
-                      .map(s => (
+                      .filter((s) => !classId || s.classId === classId)
+                      .map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.name} ({s.code})
                         </option>
@@ -428,13 +377,15 @@ export default function TimetablePage() {
                   <select
                     id="entryTeacher"
                     value={teacherId}
-                    onChange={e => setTeacherId(e.target.value)}
+                    onChange={(e) => setTeacherId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="">Select Teacher...</option>
                     {teachers
-                      .filter(t => t.role === 'faculty' || t.role === 'teacher')
-                      .map(t => (
+                      .filter(
+                        (t) => t.role === "faculty" || t.role === "teacher",
+                      )
+                      .map((t) => (
                         <option key={t.id} value={t.id}>
                           {t.name}
                         </option>
@@ -453,11 +404,11 @@ export default function TimetablePage() {
                     <select
                       id="entryDay"
                       value={dayOfWeek}
-                      onChange={e => setDayOfWeek(e.target.value)}
+                      onChange={(e) => setDayOfWeek(e.target.value)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       required
                     >
-                      {DAYS_OF_WEEK.map(d => (
+                      {DAYS_OF_WEEK.map((d) => (
                         <option key={d.value} value={d.value}>
                           {d.label}
                         </option>
@@ -476,7 +427,7 @@ export default function TimetablePage() {
                       id="entryRoom"
                       placeholder="e.g. Lab B, R304"
                       value={room}
-                      onChange={e => setRoom(e.target.value)}
+                      onChange={(e) => setRoom(e.target.value)}
                     />
                   </div>
                 </div>
@@ -493,7 +444,7 @@ export default function TimetablePage() {
                       id="entryStart"
                       type="time"
                       value={startTime}
-                      onChange={e => setStartTime(e.target.value)}
+                      onChange={(e) => setStartTime(e.target.value)}
                       required
                     />
                   </div>
@@ -509,7 +460,7 @@ export default function TimetablePage() {
                       id="entryEnd"
                       type="time"
                       value={endTime}
-                      onChange={e => setEndTime(e.target.value)}
+                      onChange={(e) => setEndTime(e.target.value)}
                       required
                     />
                   </div>
@@ -534,7 +485,7 @@ export default function TimetablePage() {
                       Saving...
                     </>
                   ) : (
-                    'Save Entry'
+                    "Save Entry"
                   )}
                 </Button>
               </div>

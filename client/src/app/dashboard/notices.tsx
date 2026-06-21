@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from '@/lib/api';
-import { useAuth } from "@/contexts/AuthContext";
+import { useNotices, useCreateNotice } from "@/hooks/queries/useNotices";
+import { useCurrentUser } from "@/hooks/queries/useAuth";
 import {
   Megaphone,
   Plus,
@@ -23,25 +22,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface Notice {
-  id: string;
-  title: string;
-  content: string;
-  targetAudience: string;
-  createdAt: string;
-  createdBy: {
-    name: string;
-    role: string;
-  };
-}
-
-interface NoticesResponse {
-  notices: Notice[];
-}
-
 export default function NoticesPage() {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { data: userData } = useCurrentUser();
+  const user = userData?.user;
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form States
@@ -54,32 +37,9 @@ export default function NoticesPage() {
   const userRole = user?.role || "member";
   const canPublish = ["owner", "admin", "principal"].includes(userRole);
 
-  const { data, isLoading, error } = useQuery<NoticesResponse>({
-    queryKey: ["notices"],
-    queryFn: () => api.get("/api/notices").then(res => res.data),
-  });
+  const { data, isLoading, error } = useNotices();
 
-  const createNoticeMutation = useMutation({
-    mutationFn: (payload: {
-      title: string;
-      content: string;
-      targetAudience: string;
-    }) =>
-      api.post("/api/notices", JSON.stringify(payload),).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notices"] });
-      setIsModalOpen(false);
-      setTitle("");
-      setContent("");
-      setTargetAudience("all");
-      setSubmitError("");
-      setSuccessMessage("Notice published successfully.");
-      setTimeout(() => setSuccessMessage(""), 5000);
-    },
-    onError: (err: any) => {
-      setSubmitError(err.message || "Failed to publish notice.");
-    },
-  });
+  const createNoticeMutation = useCreateNotice();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +47,23 @@ export default function NoticesPage() {
       setSubmitError("All fields are required.");
       return;
     }
-    createNoticeMutation.mutate({ title, content, targetAudience });
+    createNoticeMutation.mutate(
+      { title, content, targetAudience },
+      {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setTitle("");
+          setContent("");
+          setTargetAudience("all");
+          setSubmitError("");
+          setSuccessMessage("Notice published successfully.");
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+        onError: (err: any) => {
+          setSubmitError(err.message || "Failed to publish notice.");
+        },
+      },
+    );
   };
 
   if (isLoading) {

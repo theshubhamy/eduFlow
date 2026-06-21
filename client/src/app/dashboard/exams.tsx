@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from "react";
+import { useCurrentUser } from "@/hooks/queries/useAuth";
+import { useClasses } from "@/hooks/queries/useClasses";
+import { useSubjects } from "@/hooks/queries/useSubjects";
+import {
+  useExams,
+  useExamResults,
+  useScheduleExam,
+  useSubmitGrades,
+} from "@/hooks/queries/useExams";
 import {
   Calendar,
   Plus,
@@ -14,212 +20,125 @@ import {
   Award,
   ChevronRight,
   Save,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-
-interface ClassItem {
-  id: string;
-  name: string;
-  section: string;
-}
-
-interface SubjectItem {
-  id: string;
-  name: string;
-  code: string;
-  classId: string;
-}
-
-interface Exam {
-  id: string;
-  name: string;
-  classId: string;
-  subjectId: string;
-  examDate: string;
-  maxMarks: number;
-  schoolClass: {
-    id: string;
-    name: string;
-    section: string;
-  };
-  subject: {
-    id: string;
-    name: string;
-    code: string;
-  };
-}
-
-interface StudentRosterItem {
-  studentId: string;
-  name: string;
-  rollNumber: string | null;
-  marksObtained: number | null;
-  grade: string | null;
-  remarks: string;
-  resultId: string | null;
-}
-
-interface ExamResultsResponse {
-  exam: Exam;
-  roster: StudentRosterItem[];
-}
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ExamsPage() {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'calendar' | 'grading'>(
-    'calendar',
+  const { data: userData } = useCurrentUser();
+  const user = userData?.user;
+  const [activeTab, setActiveTab] = useState<"calendar" | "grading">(
+    "calendar",
   );
-  const [selectedClassFilter, setSelectedClassFilter] = useState('');
+  const [selectedClassFilter, setSelectedClassFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Scheduling Form States
-  const [name, setName] = useState('');
-  const [classId, setClassId] = useState('');
-  const [subjectId, setSubjectId] = useState('');
-  const [examDate, setExamDate] = useState('');
-  const [maxMarks, setMaxMarks] = useState('100');
-  const [submitError, setSubmitError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [name, setName] = useState("");
+  const [classId, setClassId] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+  const [examDate, setExamDate] = useState("");
+  const [maxMarks, setMaxMarks] = useState("100");
+  const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Grading Console State
-  const [selectedExamId, setSelectedExamId] = useState('');
+  const [selectedExamId, setSelectedExamId] = useState("");
   const [marksState, setMarksState] = useState<
     Record<string, { marksObtained: string; remarks: string }>
   >({});
 
-  const userRole = user?.role || 'member';
-  const canManage = ['owner', 'admin', 'principal', 'hod', 'faculty'].includes(
+  const userRole = user?.role || "member";
+  const canManage = ["owner", "admin", "principal", "hod", "faculty"].includes(
     userRole,
   );
 
   // Load Classes
-  const { data: classes = [], isLoading: isClassesLoading } = useQuery<
-    ClassItem[]
-  >({
-    queryKey: ['classes'],
-    queryFn: () => api.get('/api/classes').then(res => res.data),
-  });
+  const { data: classes = [], isLoading: isClassesLoading } = useClasses();
 
   // Load Subjects
-  const { data: subjects = [] } = useQuery<SubjectItem[]>({
-    queryKey: ['subjects'],
-    queryFn: () => api.get('/api/subjects').then(res => res.data),
-  });
+  const { data: subjects = [] } = useSubjects();
 
   // Load Exams
-  const { data: examsRes, isLoading: isExamsLoading } = useQuery<{
-    exams: Exam[];
-  }>({
-    queryKey: ['exams', selectedClassFilter],
-    queryFn: () =>
-      api
-        .get<{ exams: Exam[] }>(`/api/exams?class_id=${selectedClassFilter}`)
-        .then(res => res.data),
-  });
+  const { data: examsRes, isLoading: isExamsLoading } =
+    useExams(selectedClassFilter);
 
   // Load Roster for Grading
   const {
     data: rosterRes,
     isLoading: isRosterLoading,
     error: rosterError,
-  } = useQuery<ExamResultsResponse>({
-    queryKey: ['examResults', selectedExamId],
-    queryFn: () =>
-      api
-        .get<ExamResultsResponse>(`/api/exams/results?examId=${selectedExamId}`)
-        .then(res => res.data),
-    enabled: !!selectedExamId && activeTab === 'grading',
-  });
+  } = useExamResults(activeTab === "grading" ? selectedExamId : "");
 
   // Automatically initialize inputs when roster loads
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   React.useEffect(() => {
     if (rosterRes?.roster) {
       const initialMarks: Record<
         string,
         { marksObtained: string; remarks: string }
       > = {};
-      rosterRes.roster.forEach(r => {
+      rosterRes.roster.forEach((r) => {
         initialMarks[r.studentId] = {
           marksObtained:
-            r.marksObtained !== null ? r.marksObtained.toString() : '',
-          remarks: r.remarks || '',
+            r.marksObtained !== null ? r.marksObtained.toString() : "",
+          remarks: r.remarks || "",
         };
       });
       setMarksState(initialMarks);
     }
   }, [rosterRes]);
 
-  const scheduleExamMutation = useMutation({
-    mutationFn: (payload: any) =>
-      api.post('/api/exams', JSON.stringify(payload)).then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
-      setIsModalOpen(false);
-      setName('');
-      setClassId('');
-      setSubjectId('');
-      setExamDate('');
-      setMaxMarks('100');
-      setSubmitError('');
-      setSuccessMessage('Exam scheduled successfully.');
-      setTimeout(() => setSuccessMessage(''), 5000);
-    },
-    onError: (err: any) => {
-      setSubmitError(err.message || 'Failed to schedule exam.');
-    },
-  });
-
-  const submitGradesMutation = useMutation({
-    mutationFn: (payload: { examId: string; marks: any[] }) =>
-      api
-        .post('/api/exams/marks', JSON.stringify(payload))
-        .then(res => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['examResults', selectedExamId],
-      });
-      setSuccessMessage(
-        'Student grades and report roster updated successfully.',
-      );
-      setTimeout(() => setSuccessMessage(''), 5000);
-    },
-    onError: (err: any) => {
-      setSubmitError(err.message || 'Failed to submit marks roster.');
-      setTimeout(() => setSubmitError(''), 5000);
-    },
-  });
+  const scheduleExamMutation = useScheduleExam();
+  const submitGradesMutation = useSubmitGrades(selectedExamId);
 
   const handleScheduleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !classId || !subjectId || !examDate || !maxMarks) {
-      setSubmitError('Please fill in all fields.');
+      setSubmitError("Please fill in all fields.");
       return;
     }
-    scheduleExamMutation.mutate({
-      name,
-      classId,
-      subjectId,
-      examDate,
-      maxMarks: parseInt(maxMarks, 10),
-    });
+    scheduleExamMutation.mutate(
+      {
+        name,
+        classId,
+        subjectId,
+        examDate,
+        maxMarks: parseInt(maxMarks, 10),
+      },
+      {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setName("");
+          setClassId("");
+          setSubjectId("");
+          setExamDate("");
+          setMaxMarks("100");
+          setSubmitError("");
+          setSuccessMessage("Exam scheduled successfully.");
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+        onError: (err: any) => {
+          setSubmitError(err.message || "Failed to schedule exam.");
+        },
+      },
+    );
   };
 
   const handleMarkChange = (
     studentId: string,
     value: string,
-    field: 'marksObtained' | 'remarks',
+    field: "marksObtained" | "remarks",
   ) => {
-    setMarksState(prev => ({
+    setMarksState((prev) => ({
       ...prev,
       [studentId]: {
         ...prev[studentId],
@@ -240,21 +159,35 @@ export default function ExamsPage() {
       }),
     );
 
-    submitGradesMutation.mutate({
-      examId: selectedExamId,
-      marks: formattedMarks,
-    });
+    submitGradesMutation.mutate(
+      {
+        examId: selectedExamId,
+        marks: formattedMarks,
+      },
+      {
+        onSuccess: () => {
+          setSuccessMessage(
+            "Student grades and report roster updated successfully.",
+          );
+          setTimeout(() => setSuccessMessage(""), 5000);
+        },
+        onError: (err: any) => {
+          setSubmitError(err.message || "Failed to submit marks roster.");
+          setTimeout(() => setSubmitError(""), 5000);
+        },
+      },
+    );
   };
 
   const calculateGradeLive = (scoreStr: string, max: number): string => {
     const score = parseFloat(scoreStr);
-    if (isNaN(score) || score < 0) return '-';
+    if (isNaN(score) || score < 0) return "-";
     const pct = (score / max) * 100;
-    if (pct >= 90) return 'A';
-    if (pct >= 80) return 'B';
-    if (pct >= 70) return 'C';
-    if (pct >= 60) return 'D';
-    return 'F';
+    if (pct >= 90) return "A";
+    if (pct >= 80) return "B";
+    if (pct >= 70) return "C";
+    if (pct >= 60) return "D";
+    return "F";
   };
 
   const exams = examsRes?.exams || [];
@@ -292,26 +225,26 @@ export default function ExamsPage() {
       {/* Tabs */}
       <div className="flex border-b border-border gap-4">
         <button
-          onClick={() => setActiveTab('calendar')}
+          onClick={() => setActiveTab("calendar")}
           className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === 'calendar'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+            activeTab === "calendar"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Exam Calendar ({exams.length})
         </button>
         <button
           onClick={() => {
-            setActiveTab('grading');
+            setActiveTab("grading");
             if (exams.length > 0 && !selectedExamId) {
               setSelectedExamId(exams[0].id);
             }
           }}
           className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === 'grading'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+            activeTab === "grading"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Marks Entry Console
@@ -319,7 +252,7 @@ export default function ExamsPage() {
       </div>
 
       {/* Exam Calendar Tab */}
-      {activeTab === 'calendar' && (
+      {activeTab === "calendar" && (
         <div className="space-y-4">
           <Card className="border-border bg-card">
             <CardContent className="p-6">
@@ -336,11 +269,11 @@ export default function ExamsPage() {
                   <select
                     id="filterClass"
                     value={selectedClassFilter}
-                    onChange={e => setSelectedClassFilter(e.target.value)}
+                    onChange={(e) => setSelectedClassFilter(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="">All Classrooms</option>
-                    {classes.map(c => (
+                    {classes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name} - {c.section}
                       </option>
@@ -372,7 +305,7 @@ export default function ExamsPage() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
-              {exams.map(exam => (
+              {exams.map((exam) => (
                 <Card
                   key={exam.id}
                   className="border-border bg-card text-left hover:shadow-md transition-all"
@@ -381,7 +314,7 @@ export default function ExamsPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <span className="text-[10px] uppercase font-bold text-primary tracking-wider bg-primary/10 px-2 py-0.5 rounded">
-                          Class {exam.schoolClass.name} -{' '}
+                          Class {exam.schoolClass.name} -{" "}
                           {exam.schoolClass.section}
                         </span>
                         <CardTitle className="text-lg font-bold text-foreground mt-1.5">
@@ -393,7 +326,7 @@ export default function ExamsPage() {
                         size="sm"
                         onClick={() => {
                           setSelectedExamId(exam.id);
-                          setActiveTab('grading');
+                          setActiveTab("grading");
                         }}
                         className="cursor-pointer text-xs"
                       >
@@ -405,25 +338,25 @@ export default function ExamsPage() {
                     <div className="flex items-center gap-2">
                       <BookOpen className="size-3.5 text-purple-500" />
                       <span>
-                        Subject:{' '}
+                        Subject:{" "}
                         <strong className="text-foreground">
                           {exam.subject.name}
-                        </strong>{' '}
+                        </strong>{" "}
                         ({exam.subject.code})
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="size-3.5 text-blue-500" />
                       <span>
-                        Date:{' '}
+                        Date:{" "}
                         <strong className="text-foreground">
                           {new Date(exam.examDate).toLocaleDateString(
                             undefined,
                             {
-                              weekday: 'short',
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
+                              weekday: "short",
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
                             },
                           )}
                         </strong>
@@ -432,7 +365,7 @@ export default function ExamsPage() {
                     <div className="flex items-center gap-2">
                       <Award className="size-3.5 text-emerald-500" />
                       <span>
-                        Max Marks possible:{' '}
+                        Max Marks possible:{" "}
                         <strong className="text-foreground">
                           {exam.maxMarks}
                         </strong>
@@ -447,7 +380,7 @@ export default function ExamsPage() {
       )}
 
       {/* Grading / Marks Entry Tab */}
-      {activeTab === 'grading' && (
+      {activeTab === "grading" && (
         <div className="space-y-4 text-left">
           <Card className="border-border bg-card">
             <CardHeader className="pb-4">
@@ -463,11 +396,11 @@ export default function ExamsPage() {
                 <select
                   id="selectExamToGrade"
                   value={selectedExamId}
-                  onChange={e => setSelectedExamId(e.target.value)}
+                  onChange={(e) => setSelectedExamId(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="">Select an exam...</option>
-                  {exams.map(e => (
+                  {exams.map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.schoolClass.name}-{e.schoolClass.section} | {e.name} (
                       {e.subject.name})
@@ -508,13 +441,13 @@ export default function ExamsPage() {
               <p className="text-sm mt-1">
                 {rosterError instanceof Error
                   ? rosterError.message
-                  : 'Something went wrong loading class students.'}
+                  : "Something went wrong loading class students."}
               </p>
             </div>
           ) : activeRoster.length === 0 ? (
             <Card className="py-16 text-center text-muted-foreground">
               <p className="text-sm">
-                There are no students enrolled in Class{' '}
+                There are no students enrolled in Class{" "}
                 {gradingExam?.schoolClass.name}-
                 {gradingExam?.schoolClass.section} to enter grades for.
               </p>
@@ -535,7 +468,7 @@ export default function ExamsPage() {
                       Grade Sheet: {gradingExam?.name}
                     </CardTitle>
                     <CardDescription className="text-xs mt-1">
-                      Subject: {gradingExam?.subject.name} | Max Marks:{' '}
+                      Subject: {gradingExam?.subject.name} | Max Marks:{" "}
                       {gradingExam?.maxMarks}
                     </CardDescription>
                   </div>
@@ -572,10 +505,10 @@ export default function ExamsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {activeRoster.map(student => {
+                        {activeRoster.map((student) => {
                           const stateVal = marksState[student.studentId] || {
-                            marksObtained: '',
-                            remarks: '',
+                            marksObtained: "",
+                            remarks: "",
                           };
                           const liveGrade = calculateGradeLive(
                             stateVal.marksObtained,
@@ -583,13 +516,13 @@ export default function ExamsPage() {
                           );
 
                           const gradeColor =
-                            liveGrade === 'A' || liveGrade === 'B'
-                              ? 'bg-emerald-500/10 text-emerald-500'
-                              : liveGrade === 'C' || liveGrade === 'D'
-                                ? 'bg-amber-500/10 text-amber-500'
-                                : liveGrade === 'F'
-                                  ? 'bg-destructive/10 text-destructive font-bold'
-                                  : 'bg-muted text-muted-foreground';
+                            liveGrade === "A" || liveGrade === "B"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : liveGrade === "C" || liveGrade === "D"
+                                ? "bg-amber-500/10 text-amber-500"
+                                : liveGrade === "F"
+                                  ? "bg-destructive/10 text-destructive font-bold"
+                                  : "bg-muted text-muted-foreground";
 
                           return (
                             <tr
@@ -597,7 +530,7 @@ export default function ExamsPage() {
                               className="border-b border-border/50 hover:bg-muted/10"
                             >
                               <td className="p-4 font-mono text-muted-foreground">
-                                {student.rollNumber || '#'}
+                                {student.rollNumber || "#"}
                               </td>
                               <td className="p-4 font-semibold text-foreground">
                                 {student.name}
@@ -611,11 +544,11 @@ export default function ExamsPage() {
                                   disabled={!canManage}
                                   placeholder={`Max: ${gradingExam?.maxMarks}`}
                                   value={stateVal.marksObtained}
-                                  onChange={e =>
+                                  onChange={(e) =>
                                     handleMarkChange(
                                       student.studentId,
                                       e.target.value,
-                                      'marksObtained',
+                                      "marksObtained",
                                     )
                                   }
                                   className="w-[120px] font-semibold text-center"
@@ -633,11 +566,11 @@ export default function ExamsPage() {
                                   placeholder="Good attempt, needs revision, etc..."
                                   disabled={!canManage}
                                   value={stateVal.remarks}
-                                  onChange={e =>
+                                  onChange={(e) =>
                                     handleMarkChange(
                                       student.studentId,
                                       e.target.value,
-                                      'remarks',
+                                      "remarks",
                                     )
                                   }
                                   className="w-full"
@@ -695,7 +628,7 @@ export default function ExamsPage() {
                     id="examName"
                     placeholder="e.g. Mid-Term Examination 2026, Weekly Test"
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    onChange={(e) => setName(e.target.value)}
                     required
                   />
                 </div>
@@ -710,15 +643,15 @@ export default function ExamsPage() {
                   <select
                     id="examClass"
                     value={classId}
-                    onChange={e => {
+                    onChange={(e) => {
                       setClassId(e.target.value);
-                      setSubjectId(''); // reset subject on class switch
+                      setSubjectId(""); // reset subject on class switch
                     }}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Select Classroom...</option>
-                    {classes.map(c => (
+                    {classes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name} - {c.section}
                       </option>
@@ -736,14 +669,14 @@ export default function ExamsPage() {
                   <select
                     id="examSubject"
                     value={subjectId}
-                    onChange={e => setSubjectId(e.target.value)}
+                    onChange={(e) => setSubjectId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Select Subject...</option>
                     {subjects
-                      .filter(s => !classId || s.classId === classId)
-                      .map(s => (
+                      .filter((s) => !classId || s.classId === classId)
+                      .map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.name} ({s.code})
                         </option>
@@ -763,7 +696,7 @@ export default function ExamsPage() {
                       id="examDate"
                       type="date"
                       value={examDate}
-                      onChange={e => setExamDate(e.target.value)}
+                      onChange={(e) => setExamDate(e.target.value)}
                       required
                     />
                   </div>
@@ -780,7 +713,7 @@ export default function ExamsPage() {
                       type="number"
                       placeholder="100"
                       value={maxMarks}
-                      onChange={e => setMaxMarks(e.target.value)}
+                      onChange={(e) => setMaxMarks(e.target.value)}
                       required
                     />
                   </div>
@@ -802,7 +735,7 @@ export default function ExamsPage() {
                       Scheduling...
                     </>
                   ) : (
-                    'Schedule Exam'
+                    "Schedule Exam"
                   )}
                 </Button>
               </div>
