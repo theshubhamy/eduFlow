@@ -33,6 +33,6 @@ router.use("/exams", examRoutes);
 router.use("/library", libraryRoutes);
 router.use("/leaves", leaveRoutes);
 router.use("/timetable", timetableRoutes);
-router.use("/dashbaord", dashboardRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 export default router;
