@@ -81,6 +81,7 @@ export const DashboardLayout: React.FC = () => {
             {/* Left: Breadcrumbs & Trigger */}
             <div className="flex items-center gap-2">
               <SidebarTrigger className="-ml-1 text-[#64748B] hover:text-[#0F172A] dark:text-[#94A3B8] dark:hover:text-[#F1F5F9]" />
+
               <Breadcrumb className="hidden sm:block">
                 <BreadcrumbList>
                   <BreadcrumbItem>
