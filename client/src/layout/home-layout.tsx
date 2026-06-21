@@ -1,30 +1,31 @@
 import { Outlet, Link } from "react-router-dom";
-import { GraduationCap, ShieldCheck } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const HomeLayout = () => {
   return (
-    <div className="flex min-h-screen flex-col bg-background font-sans selection:bg-primary/20">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-8">
+    <div className="flex min-h-screen flex-col bg-background font-sans selection:bg-primary/10">
+      {/* Navbar (Height: 64px, Sticky, z-50, bg-background/95, backdrop-blur) */}
+      <header className="sticky top-0 z-50 w-full border-b border-[#E5E7EB] bg-background/95 backdrop-blur-md dark:border-[#334155]">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              <GraduationCap className="size-5" />
-            </div>
-            <Link to="/" className="text-xl font-bold tracking-tight text-foreground">
-              edu<span className="text-primary">Flow</span>
+            <GraduationCap className="h-6 w-6 text-[#2563EB]" />
+            <Link to="/" className="text-xl font-bold tracking-tight text-[#0F172A] dark:text-[#F1F5F9]">
+              edu<span className="text-[#2563EB]">Flow</span>
             </Link>
           </div>
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <Link to="/#features" className="hover:text-foreground transition-colors">Features</Link>
-            <Link to="/#about" className="hover:text-foreground transition-colors">About</Link>
+          
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#64748B] dark:text-[#94A3B8]">
+            <a href="#features" className="hover:text-[#0F172A] dark:hover:text-[#F1F5F9] transition-colors">Features</a>
+            <a href="#how-it-works" className="hover:text-[#0F172A] dark:hover:text-[#F1F5F9] transition-colors">How It Works</a>
+            <a href="#pricing" className="hover:text-[#0F172A] dark:hover:text-[#F1F5F9] transition-colors">Pricing</a>
           </nav>
+          
           <div className="flex items-center gap-4">
-            <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/login" className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] dark:text-[#94A3B8] dark:hover:text-[#F1F5F9] transition-colors">
               Sign In
             </Link>
-            <Button asChild className="rounded-full shadow-md hover:shadow-lg transition-all">
+            <Button asChild size="sm" variant="default">
               <Link to="/register">Get Started</Link>
             </Button>
           </div>
@@ -36,18 +37,54 @@ const HomeLayout = () => {
         <Outlet />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 py-12 bg-background">
-        <div className="container mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 text-foreground">
-            <GraduationCap className="size-5 text-primary" />
-            <span className="font-semibold tracking-tight">eduFlow</span>
+      {/* Footer (4-col links + copy) */}
+      <footer className="border-t border-[#E5E7EB] bg-[#F8F9FA] dark:border-[#334155] dark:bg-[#1E293B]">
+        <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+            <div>
+              <div className="flex items-center gap-2 mb-4 text-[#0F172A] dark:text-[#F1F5F9]">
+                <GraduationCap className="h-5 w-5 text-[#2563EB]" />
+                <span className="font-semibold tracking-tight">eduFlow</span>
+              </div>
+              <p className="text-sm text-[#64748B] dark:text-[#94A3B8] max-w-xs">
+                The modern, minimal school operating system to coordinate academic rosters, billing, and communication.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-[#0F172A] dark:text-[#F1F5F9] uppercase tracking-wider mb-4">Product</h4>
+              <ul className="space-y-2 text-sm text-[#64748B] dark:text-[#94A3B8]">
+                <li><a href="#features" className="hover:text-[#2563EB] transition-colors">Features</a></li>
+                <li><a href="#pricing" className="hover:text-[#2563EB] transition-colors">Pricing</a></li>
+                <li><span className="opacity-50">API Reference</span></li>
+                <li><span className="opacity-50">Integrations</span></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-[#0F172A] dark:text-[#F1F5F9] uppercase tracking-wider mb-4">Company</h4>
+              <ul className="space-y-2 text-sm text-[#64748B] dark:text-[#94A3B8]">
+                <li><span className="opacity-50">About Us</span></li>
+                <li><span className="opacity-50">Careers</span></li>
+                <li><span className="opacity-50">Blog</span></li>
+                <li><span className="opacity-50">Press Kit</span></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-[#0F172A] dark:text-[#F1F5F9] uppercase tracking-wider mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm text-[#64748B] dark:text-[#94A3B8]">
+                <li><span className="opacity-50">Privacy Policy</span></li>
+                <li><span className="opacity-50">Terms of Service</span></li>
+                <li><span className="opacity-50">GDPR Compliance</span></li>
+                <li><span className="opacity-50">Security Trust</span></li>
+              </ul>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} eduFlow Inc. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4 text-muted-foreground">
-            <ShieldCheck className="size-4 hover:text-foreground cursor-pointer transition-colors" />
+          <div className="border-t border-[#E5E7EB] pt-8 dark:border-[#334155] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
+              &copy; {new Date().getFullYear()} eduFlow Inc. All rights reserved. Designed with intentional minimalism.
+            </p>
+            <div className="text-xs text-[#94A3B8] dark:text-[#64748B]">
+              V1.2.0-stable
+            </div>
           </div>
         </div>
       </footer>

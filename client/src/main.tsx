@@ -8,6 +8,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "./components/theme-provider.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,10 +24,12 @@ createRoot(document.getElementById("root")!).render(
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <TooltipProvider>
-            <App />
-            <Toaster />
-          </TooltipProvider>
+          <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+            <TooltipProvider>
+              <App />
+              <Toaster />
+            </TooltipProvider>
+          </ThemeProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </Provider>

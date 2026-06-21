@@ -18,10 +18,34 @@ import NoticesPage from "@/app/dashboard/notices";
 import TeamPage from "@/app/dashboard/team";
 import SettingsPage from "@/app/dashboard/settings";
 
+import { useEffect } from "react";
+import { useSelector } from "react-redux";
+import type { RootState } from "./store";
 import HomePage from "@/app/home/index";
 import HomeLayout from "./layout/home-layout";
 
 function App() {
+  const theme = useSelector((state: RootState) => state.ui.theme);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const updateTheme = () => {
+      const isDark =
+        theme === "dark" || (theme === "system" && mediaQuery.matches);
+      if (isDark) {
+        root.classList.add("dark");
+      } else {
+        root.classList.remove("dark");
+      }
+    };
+
+    updateTheme();
+    mediaQuery.addEventListener("change", updateTheme);
+    return () => mediaQuery.removeEventListener("change", updateTheme);
+  }, [theme]);
+
   return (
     <Routes>
       <Route path="/" element={<HomeLayout />}>

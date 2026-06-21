@@ -3,15 +3,9 @@ import { useState } from "react";
 import { useRegister } from "@/hooks/queries/useAuth";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Loader2, AlertCircle, Eye, EyeOff, GraduationCap } from "lucide-react";
 
 export default function RegisterPage() {
   const registerMutation = useRegister();
@@ -20,6 +14,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [schoolName, setSchoolName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -47,133 +42,174 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-muted/20 py-12 md:py-16">
-      <div className="w-full max-w-sm md:max-w-4xl">
-        <div className="flex flex-col gap-6">
-          <Card className="overflow-hidden p-0 shadow-2xl border-border/40 rounded-3xl bg-background/50 backdrop-blur-xl">
-            <CardContent className="grid p-0 md:grid-cols-2">
-              <form
-                onSubmit={handleSubmit}
-                className="p-6 md:p-8 flex flex-col justify-center"
-              >
-                <FieldGroup>
-                  <div className="flex flex-col items-center gap-2 text-center mb-4">
-                    <h1 className="text-3xl font-bold tracking-tight">
-                      Register School
-                    </h1>
-                    <p className="text-balance text-sm text-muted-foreground">
-                      Create an administrator account for your school
-                    </p>
-                  </div>
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-white dark:bg-[#0F172A]">
+      {/* Left Panel - Brand Storytelling (Hidden on mobile) */}
+      <div className="hidden md:flex flex-col justify-between p-12 bg-[#0F172A] text-white relative overflow-hidden">
+        {/* Background Subtle Graphic */}
+        <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#334155_1px,transparent_1px),linear-gradient(to_bottom,#334155_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
+        
+        {/* Top Branding Logo */}
+        <div className="flex items-center gap-2 z-10">
+          <GraduationCap className="h-6 w-6 text-[#2563EB]" />
+          <Link to="/" className="text-xl font-bold tracking-tight text-white hover:opacity-90 transition-opacity">
+            edu<span className="text-[#2563EB]">Flow</span>
+          </Link>
+        </div>
 
-                  {errorMsg && (
-                    <div className="mb-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20 animate-fade-in">
-                      <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
-                      <span className="text-xs font-semibold">{errorMsg}</span>
-                    </div>
-                  )}
+        {/* Center Tagline */}
+        <div className="my-auto space-y-6 max-w-lg z-10">
+          <h2 className="text-3xl font-bold tracking-tight text-white leading-tight lg:text-4xl">
+            Streamline your school workflows in minutes.
+          </h2>
+          <p className="text-slate-400 text-sm leading-relaxed">
+            Create an administrator profile, register your school name, and establish core academic structures.
+          </p>
+        </div>
 
-                  <Field>
-                    <FieldLabel htmlFor="name">Admin Full Name</FieldLabel>
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Principal Skinner"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      disabled={loading}
-                      required
-                    />
-                  </Field>
+        {/* Bottom Testimonial Block */}
+        <div className="border-t border-slate-800 pt-6 z-10">
+          <p className="text-xs text-slate-400 italic">
+            &ldquo;Onboarding Springfield Elementary took less than ten minutes. The clean interfaces let our teachers take attendance registers without any special training.&rdquo;
+          </p>
+          <div className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-[#2563EB]">
+            — Springfield School District
+          </div>
+        </div>
+      </div>
 
-                  <Field>
-                    <FieldLabel htmlFor="email">Email Address</FieldLabel>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="skinner@springfield.edu"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={loading}
-                      required
-                    />
-                  </Field>
+      {/* Right Panel - Form (Full-width on mobile, centered) */}
+      <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-[#0F172A] relative">
+        {/* Mobile Header Logo */}
+        <div className="absolute top-8 left-8 flex items-center gap-2 md:hidden">
+          <GraduationCap className="h-5 w-5 text-[#2563EB]" />
+          <span className="text-lg font-bold tracking-tight text-[#0F172A] dark:text-[#F1F5F9]">
+            eduFlow
+          </span>
+        </div>
 
-                  <Field>
-                    <FieldLabel htmlFor="schoolName">
-                      School / Organization Name
-                    </FieldLabel>
-                    <Input
-                      id="schoolName"
-                      type="text"
-                      placeholder="Springfield Elementary School"
-                      value={schoolName}
-                      onChange={(e) => setSchoolName(e.target.value)}
-                      disabled={loading}
-                      required
-                    />
-                  </Field>
+        <div className="w-full max-w-sm flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] dark:text-[#F1F5F9]">
+              Create school account
+            </h1>
+            <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+              Register your school and configure your administrator login
+            </p>
+          </div>
 
-                  <Field>
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="At least 6 characters"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={loading}
-                      required
-                    />
-                  </Field>
+          {errorMsg && (
+            <div className="flex items-center gap-2 rounded-lg bg-[#FEE2E2] p-3 text-[#B91C1C] border border-[#FEE2E2] dark:bg-red-950/20 dark:border-red-950/30">
+              <AlertCircle className="h-4 w-4 shrink-0 text-[#B91C1C]" />
+              <span className="text-xs font-semibold">{errorMsg}</span>
+            </div>
+          )}
 
-                  <Field className="mt-2">
-                    <Button
-                      type="submit"
-                      className="w-full cursor-pointer"
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating Account...
-                        </>
-                      ) : (
-                        "Register School"
-                      )}
-                    </Button>
-                  </Field>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Admin Name Field */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="name" className="text-sm font-medium text-[#0F172A] dark:text-[#F1F5F9]">
+                Admin Full Name
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Principal Skinner"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
 
-                  <FieldDescription className="text-center mt-4">
-                    Already have an account?{" "}
-                    <Link
-                      to="/login"
-                      className="underline hover:text-primary font-medium"
-                    >
-                      Login here
-                    </Link>
-                  </FieldDescription>
-                </FieldGroup>
-              </form>
-              <div className="relative hidden bg-muted md:block">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-purple-500/20 mix-blend-multiply z-10" />
-                <img
-                  src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=800&auto=format&fit=crop"
-                  alt="Students Studying"
-                  className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.3]"
+            {/* Email Field */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email" className="text-sm font-medium text-[#0F172A] dark:text-[#F1F5F9]">
+                Email Address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="skinner@springfield.edu"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+
+            {/* School Name Field */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="schoolName" className="text-sm font-medium text-[#0F172A] dark:text-[#F1F5F9]">
+                School / Organization Name
+              </Label>
+              <Input
+                id="schoolName"
+                type="text"
+                placeholder="Springfield Elementary School"
+                value={schoolName}
+                onChange={(e) => setSchoolName(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+
+            {/* Password Field */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password" className="text-sm font-medium text-[#0F172A] dark:text-[#F1F5F9]">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="At least 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  required
+                  className="pr-10"
                 />
-                <div className="absolute bottom-8 left-8 right-8 z-20 text-white p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl">
-                  <h3 className="font-bold text-lg">
-                    Streamline School Workflows
-                  </h3>
-                  <p className="text-xs text-white/80 mt-1">
-                    Onboard your school in minutes and start managing your
-                    classes, attendance rosters, and student admissions.
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] dark:text-[#64748B] dark:hover:text-[#94A3B8]"
+                  disabled={loading}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full mt-2"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                "Register School"
+              )}
+            </Button>
+          </form>
+
+          {/* Switch Link */}
+          <p className="text-center text-sm text-[#64748B] dark:text-[#94A3B8]">
+            Already have an account?{" "}
+            <Link to="/login" className="text-[#2563EB] hover:underline font-semibold">
+              Login here
+            </Link>
+          </p>
+
+          {/* Tiny Footer */}
+          <p className="text-center text-[10px] text-[#94A3B8] dark:text-[#64748B]">
+            By clicking continue, you agree to our{" "}
+            <span className="underline cursor-pointer">Terms of Service</span> and{" "}
+            <span className="underline cursor-pointer">Privacy Policy</span>.
+          </p>
         </div>
       </div>
     </div>
