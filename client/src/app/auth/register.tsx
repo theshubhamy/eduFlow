@@ -28,20 +28,29 @@ export default function RegisterPage() {
     setLoading(true);
     setErrorMsg("");
     try {
-      await registerMutation.mutateAsync({ name, email, password, company_name: schoolName });
+      await registerMutation.mutateAsync({
+        name,
+        email,
+        password,
+        company_name: schoolName,
+      });
       navigate("/dashboard");
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Registration failed. Please try again.");
+      setErrorMsg(
+        err instanceof Error
+          ? err.message
+          : "Registration failed. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-muted p-6 md:p-10">
+    <div className="flex flex-1 flex-col items-center justify-center bg-muted/20 py-12 md:py-16">
       <div className="w-full max-w-sm md:max-w-4xl">
         <div className="flex flex-col gap-6">
-          <Card className="overflow-hidden p-0 shadow-lg border-border">
+          <Card className="overflow-hidden p-0 shadow-2xl border-border/40 rounded-3xl bg-background/50 backdrop-blur-xl">
             <CardContent className="grid p-0 md:grid-cols-2">
               <form
                 onSubmit={handleSubmit}
@@ -153,7 +162,7 @@ export default function RegisterPage() {
                   alt="Students Studying"
                   className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.3]"
                 />
-                <div className="absolute bottom-6 left-6 right-6 z-20 text-white p-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/10">
+                <div className="absolute bottom-8 left-8 right-8 z-20 text-white p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl">
                   <h3 className="font-bold text-lg">
                     Streamline School Workflows
                   </h3>

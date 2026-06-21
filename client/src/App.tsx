@@ -18,13 +18,17 @@ import NoticesPage from "@/app/dashboard/notices";
 import TeamPage from "@/app/dashboard/team";
 import SettingsPage from "@/app/dashboard/settings";
 
+import HomePage from "@/app/home/index";
+import HomeLayout from "./layout/home-layout";
+
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<HomeLayout />}>
+        <Route index element={<HomePage />} />
+      </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-
       <Route
         path="/dashboard"
         element={

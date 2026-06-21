@@ -41,7 +41,7 @@ export function LoginForm({
 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
-      <Card className="overflow-hidden p-0 shadow-lg border-border">
+      <Card className="overflow-hidden p-0 shadow-2xl border-border/40 rounded-3xl bg-background/50 backdrop-blur-xl">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form
             onSubmit={handleSubmit}
@@ -126,7 +126,7 @@ export function LoginForm({
               alt="School Campus"
               className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.3]"
             />
-            <div className="absolute bottom-6 left-6 right-6 z-20 text-white p-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/10">
+            <div className="absolute bottom-8 left-8 right-8 z-20 text-white p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl">
               <h3 className="font-bold text-lg">eduFlow Management</h3>
               <p className="text-xs text-white/80 mt-1">
                 An all-in-one suite to manage classes, tracking attendance,

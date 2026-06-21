@@ -51,7 +51,7 @@ export const DashboardLayout: React.FC = () => {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-card px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/40 bg-background/60 backdrop-blur-xl px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator
@@ -85,7 +85,7 @@ export const DashboardLayout: React.FC = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto bg-background p-6">
+        <main className="flex-1 overflow-y-auto bg-muted/20 p-4 md:p-8">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
