@@ -1,0 +1,240 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum TeamRole {
+  owner
+  admin
+  principal
+  hod
+  admission
+  accounts
+  faculty
+  member
+}
+
+model User {
+  id                      String           @id @default(uuid())
+  name                    String
+  email                   String           @unique
+  emailVerifiedAt         DateTime?        @map("email_verified_at")
+  password                String
+  role                    String           @default("member")
+  schoolId                String?          @map("school_id")
+  currentTeamId           String?          @map("current_team_id")
+  rememberToken           String?          @map("remember_token")
+  twoFactorSecret         String?          @map("two_factor_secret")
+  twoFactorRecoveryCodes  String?          @map("two_factor_recovery_codes")
+  twoFactorConfirmedAt    DateTime?        @map("two_factor_confirmed_at")
+  createdAt               DateTime         @default(now()) @map("created_at")
+  updatedAt               DateTime         @updatedAt @map("updated_at")
+
+  school                  School?          @relation(fields: [schoolId], references: [id])
+  currentTeam             Team?            @relation("UserCurrentTeam", fields: [currentTeamId], references: [id])
+  memberships             TeamMember[]
+  sentInvitations         TeamInvitation[] @relation("SentInvitations")
+  students                Student[]
+  subjects                Subject[]
+}
+
+model School {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  website   String?
+  logo      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users           User[]
+  classes         SchoolClass[]
+  students        Student[]
+  subjects        Subject[]
+  attendance      Attendance[]
+  feeCategories   FeeCategory[]
+  feeAllocations  FeeAllocation[]
+  feePayments     FeePayment[]
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  isPersonal  Boolean  @default(false) @map("is_personal")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  members         TeamMember[]
+  currentTeamUsers User[]           @relation("UserCurrentTeam")
+  invitations     TeamInvitation[]
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  teamId    String   @map("team_id")
+  userId    String   @map("user_id")
+  role      TeamRole @default(member)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model TeamInvitation {
+  id         String    @id @default(uuid())
+  teamId     String    @map("team_id")
+  email      String
+  role       TeamRole
+  code       String    @unique
+  invitedBy  String    @map("invited_by")
+  expiresAt  DateTime? @map("expires_at")
+  acceptedAt DateTime? @map("accepted_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  team       Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  inviter    User      @relation("SentInvitations", fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@map("team_invitations")
+}
+
+model SchoolClass {
+  id         String   @id @default(uuid())
+  schoolId   String   @map("school_id")
+  name       String
+  section    String
+  roomNumber String?  @map("room_number")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  school     School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  students   Student[]
+  subjects   Subject[]
+  feeAllocations FeeAllocation[]
+
+  @@map("classes")
+}
+
+model Student {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  classId       String   @map("class_id")
+  rollNumber    String   @map("roll_number")
+  admissionDate DateTime @map("admission_date")
+  schoolId      String   @map("school_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schoolClass   SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  attendance    Attendance[]
+  feeAllocations FeeAllocation[]
+  feePayments    FeePayment[]
+
+  @@map("students")
+}
+
+model Subject {
+  id        String   @id @default(uuid())
+  schoolId  String   @map("school_id")
+  classId   String   @map("class_id")
+  teacherId String   @map("teacher_id")
+  name      String
+  code      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  school      School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  schoolClass SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher     User        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@map("subjects")
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  schoolId  String   @map("school_id")
+  classId   String   @map("class_id")
+  studentId String   @map("student_id")
+  date      DateTime
+  status    String   // e.g. "present", "absent", "late", "excused"
+  remarks   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@map("attendance")
+}
+
+model FeeCategory {
+  id          String   @id @default(uuid())
+  schoolId    String   @map("school_id")
+  name        String
+  amount      Decimal  @db.Decimal(10, 2)
+  periodicity String   // "monthly", "term", "annual"
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  allocations FeeAllocation[]
+
+  @@map("fee_categories")
+}
+
+model FeeAllocation {
+  id            String   @id @default(uuid())
+  schoolId      String   @map("school_id")
+  feeCategoryId String   @map("fee_category_id")
+  classId       String?  @map("class_id")
+  studentId     String?  @map("student_id")
+  startDate     DateTime @map("start_date")
+  endDate       DateTime @map("end_date")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  feeCategory   FeeCategory @relation(fields: [feeCategoryId], references: [id], onDelete: Cascade)
+  schoolClass   SchoolClass? @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student       Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments      FeePayment[]
+
+  @@map("fee_allocations")
+}
+
+model FeePayment {
+  id               String   @id @default(uuid())
+  schoolId         String   @map("school_id")
+  studentId        String   @map("student_id")
+  feeAllocationId  String   @map("fee_allocation_id")
+  amountPaid       Decimal  @map("amount_paid") @db.Decimal(10, 2)
+  paymentDate      DateTime @default(now()) @map("payment_date")
+  method           String
+  status           String   @default("paid")
+  periodIdentifier String   @map("period_identifier")
+  receiptNumber    String   @unique @map("receipt_number")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  school        School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student       Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  feeAllocation FeeAllocation @relation(fields: [feeAllocationId], references: [id], onDelete: Cascade)
+
+  @@map("fee_payments")
+}
