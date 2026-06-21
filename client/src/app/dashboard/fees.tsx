@@ -9,6 +9,7 @@ import {
   Calendar,
   Users,
   School,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -219,6 +220,10 @@ export default function FeesPage() {
   const allocations = feesData?.allocations || [];
   const students = studentsResponse?.data || [];
 
+  const handleExportLedger = (format: "csv" | "json") => {
+    window.location.href = `/api/finance/export?format=${format}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -231,7 +236,23 @@ export default function FeesPage() {
             or students.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleExportLedger("csv")}
+            className="cursor-pointer border-blue-500/20 text-blue-600 dark:text-blue-500 hover:bg-blue-500/10"
+          >
+            <Download className="size-4 mr-2" />
+            Tally Export (CSV)
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleExportLedger("json")}
+            className="cursor-pointer border-indigo-500/20 text-indigo-600 dark:text-indigo-500 hover:bg-indigo-500/10"
+          >
+            <Download className="size-4 mr-2" />
+            Export JSON
+          </Button>
           <Button
             variant="outline"
             onClick={() => setIsCatModalOpen(true)}

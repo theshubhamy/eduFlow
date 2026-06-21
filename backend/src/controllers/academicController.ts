@@ -1,14 +1,16 @@
-import { Response } from 'express';
-import bcrypt from 'bcrypt';
-import { prisma } from '../db';
-import { AuthRequest } from '../middleware/auth';
+import { Response } from "express";
+import bcrypt from "bcrypt";
+import { prisma } from "../config/db";
+import { AuthRequest } from "../middleware/auth";
+import { delCache } from "../config/redis";
 
 // --- STUDENTS / ADMISSIONS ---
 
 export async function listStudents(req: AuthRequest, res: Response) {
   try {
     const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -27,7 +29,7 @@ export async function listStudents(req: AuthRequest, res: Response) {
         },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       prisma.student.count({ where: { schoolId } }),
     ]);
@@ -41,15 +43,18 @@ export async function listStudents(req: AuthRequest, res: Response) {
       last_page: Math.ceil(total / limit),
     });
   } catch (err) {
-    console.error('List students error:', err);
-    return res.status(500).json({ error: 'Internal server error listing students.' });
+    console.error("List students error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error listing students." });
   }
 }
 
 export async function createStudentData(req: AuthRequest, res: Response) {
   try {
     const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const classes = await prisma.schoolClass.findMany({
       where: { schoolId },
@@ -58,25 +63,36 @@ export async function createStudentData(req: AuthRequest, res: Response) {
 
     return res.json(classes);
   } catch (err) {
-    console.error('Get create student options error:', err);
-    return res.status(500).json({ error: 'Internal server error fetching classes.' });
+    console.error("Get create student options error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error fetching classes." });
   }
 }
 
 export async function storeStudent(req: AuthRequest, res: Response) {
   try {
     const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
-    const { name, email, password, class_id, roll_number, admission_date } = req.body;
+    const { name, email, password, class_id, roll_number, admission_date } =
+      req.body;
 
-    if (!name || !email || !password || !class_id || !roll_number || !admission_date) {
-      return res.status(400).json({ error: 'All fields are required.' });
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !class_id ||
+      !roll_number ||
+      !admission_date
+    ) {
+      return res.status(400).json({ error: "All fields are required." });
     }
 
     const emailExists = await prisma.user.findUnique({ where: { email } });
     if (emailExists) {
-      return res.status(400).json({ error: 'Email already registered.' });
+      return res.status(400).json({ error: "Email already registered." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -88,7 +104,7 @@ export async function storeStudent(req: AuthRequest, res: Response) {
           name,
           email,
           password: hashedPassword,
-          role: 'student',
+          role: "student",
           schoolId,
         },
       });
@@ -107,13 +123,18 @@ export async function storeStudent(req: AuthRequest, res: Response) {
       return studentRec;
     });
 
+    // Invalidate dashboard stats cache
+    await delCache(`dashboard:${schoolId}`);
+
     return res.status(201).json({
-      message: 'Student admitted successfully.',
+      message: "Student admitted successfully.",
       student,
     });
   } catch (err) {
-    console.error('Admit student error:', err);
-    return res.status(500).json({ error: 'Internal server error admitting student.' });
+    console.error("Admit student error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error admitting student." });
   }
 }
 
@@ -122,7 +143,8 @@ export async function storeStudent(req: AuthRequest, res: Response) {
 export async function listClasses(req: AuthRequest, res: Response) {
   try {
     const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const classes = await prisma.schoolClass.findMany({
       where: { schoolId },
@@ -131,7 +153,7 @@ export async function listClasses(req: AuthRequest, res: Response) {
           select: { students: true },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
     // Map to the Laravel UI expected output format
@@ -147,20 +169,25 @@ export async function listClasses(req: AuthRequest, res: Response) {
 
     return res.json(formatted);
   } catch (err) {
-    console.error('List classes error:', err);
-    return res.status(500).json({ error: 'Internal server error listing classes.' });
+    console.error("List classes error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error listing classes." });
   }
 }
 
 export async function storeClass(req: AuthRequest, res: Response) {
   try {
     const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const { name, section, room_number } = req.body;
 
     if (!name || !section) {
-      return res.status(400).json({ error: 'Class name and section are required.' });
+      return res
+        .status(400)
+        .json({ error: "Class name and section are required." });
     }
 
     const schoolClass = await prisma.schoolClass.create({
@@ -172,13 +199,18 @@ export async function storeClass(req: AuthRequest, res: Response) {
       },
     });
 
+    // Invalidate dashboard stats cache
+    await delCache(`dashboard:${schoolId}`);
+
     return res.status(201).json({
-      message: 'Class created successfully.',
+      message: "Class created successfully.",
       class: schoolClass,
     });
   } catch (err) {
-    console.error('Create class error:', err);
-    return res.status(500).json({ error: 'Internal server error creating class.' });
+    console.error("Create class error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error creating class." });
   }
 }
 
@@ -187,7 +219,8 @@ export async function destroyClass(req: AuthRequest, res: Response) {
     const schoolId = req.user?.schoolId;
     const { id } = req.params;
 
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const targetClass = await prisma.schoolClass.findUnique({
       where: { id },
@@ -199,19 +232,26 @@ export async function destroyClass(req: AuthRequest, res: Response) {
     });
 
     if (!targetClass || targetClass.schoolId !== schoolId) {
-      return res.status(404).json({ error: 'Class not found.' });
+      return res.status(404).json({ error: "Class not found." });
     }
 
     if (targetClass._count.students > 0) {
-      return res.status(400).json({ error: 'Cannot delete class with enrolled students.' });
+      return res
+        .status(400)
+        .json({ error: "Cannot delete class with enrolled students." });
     }
 
     await prisma.schoolClass.delete({ where: { id } });
 
-    return res.json({ message: 'Class deleted successfully.' });
+    // Invalidate dashboard stats cache
+    await delCache(`dashboard:${schoolId}`);
+
+    return res.json({ message: "Class deleted successfully." });
   } catch (err) {
-    console.error('Delete class error:', err);
-    return res.status(500).json({ error: 'Internal server error deleting class.' });
+    console.error("Delete class error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error deleting class." });
   }
 }
 
@@ -220,7 +260,8 @@ export async function destroyClass(req: AuthRequest, res: Response) {
 export async function listSubjects(req: AuthRequest, res: Response) {
   try {
     const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const subjects = await prisma.subject.findMany({
       where: { schoolId },
@@ -238,7 +279,7 @@ export async function listSubjects(req: AuthRequest, res: Response) {
     const teachers = await prisma.user.findMany({
       where: {
         schoolId,
-        role: { in: ['admin', 'teacher', 'faculty'] },
+        role: { in: ["admin", "teacher", "faculty"] },
       },
       select: { id: true, name: true },
     });
@@ -248,16 +289,20 @@ export async function listSubjects(req: AuthRequest, res: Response) {
       _id: s.id,
       name: s.name,
       code: s.code,
-      school_class: s.schoolClass ? {
-        id: s.schoolClass.id,
-        _id: s.schoolClass.id,
-        name: s.schoolClass.name,
-        section: s.schoolClass.section,
-      } : null,
-      teacher: s.teacher ? {
-        id: s.teacher.id,
-        name: s.teacher.name,
-      } : null,
+      school_class: s.schoolClass
+        ? {
+            id: s.schoolClass.id,
+            _id: s.schoolClass.id,
+            name: s.schoolClass.name,
+            section: s.schoolClass.section,
+          }
+        : null,
+      teacher: s.teacher
+        ? {
+            id: s.teacher.id,
+            name: s.teacher.name,
+          }
+        : null,
     }));
 
     return res.json({
@@ -266,20 +311,23 @@ export async function listSubjects(req: AuthRequest, res: Response) {
       teachers,
     });
   } catch (err) {
-    console.error('List subjects error:', err);
-    return res.status(500).json({ error: 'Internal server error listing subjects.' });
+    console.error("List subjects error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error listing subjects." });
   }
 }
 
 export async function storeSubject(req: AuthRequest, res: Response) {
   try {
     const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const { name, code, class_id, teacher_id } = req.body;
 
     if (!name || !code || !class_id || !teacher_id) {
-      return res.status(400).json({ error: 'All fields are required.' });
+      return res.status(400).json({ error: "All fields are required." });
     }
 
     const subject = await prisma.subject.create({
@@ -293,12 +341,14 @@ export async function storeSubject(req: AuthRequest, res: Response) {
     });
 
     return res.status(201).json({
-      message: 'Subject created successfully.',
+      message: "Subject created successfully.",
       subject,
     });
   } catch (err) {
-    console.error('Create subject error:', err);
-    return res.status(500).json({ error: 'Internal server error creating subject.' });
+    console.error("Create subject error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error creating subject." });
   }
 }
 
@@ -307,19 +357,22 @@ export async function destroySubject(req: AuthRequest, res: Response) {
     const schoolId = req.user?.schoolId;
     const { id } = req.params;
 
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const subject = await prisma.subject.findUnique({ where: { id } });
     if (!subject || subject.schoolId !== schoolId) {
-      return res.status(404).json({ error: 'Subject not found.' });
+      return res.status(404).json({ error: "Subject not found." });
     }
 
     await prisma.subject.delete({ where: { id } });
 
-    return res.json({ message: 'Subject deleted successfully.' });
+    return res.json({ message: "Subject deleted successfully." });
   } catch (err) {
-    console.error('Delete subject error:', err);
-    return res.status(500).json({ error: 'Internal server error deleting subject.' });
+    console.error("Delete subject error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error deleting subject." });
   }
 }
 
@@ -328,7 +381,8 @@ export async function destroySubject(req: AuthRequest, res: Response) {
 export async function listAttendanceClasses(req: AuthRequest, res: Response) {
   try {
     const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const classes = await prisma.schoolClass.findMany({
       where: { schoolId },
@@ -337,8 +391,10 @@ export async function listAttendanceClasses(req: AuthRequest, res: Response) {
 
     return res.json({ classes });
   } catch (err) {
-    console.error('List attendance classes error:', err);
-    return res.status(500).json({ error: 'Internal server error fetching classes.' });
+    console.error("List attendance classes error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error fetching classes." });
   }
 }
 
@@ -347,9 +403,10 @@ export async function createAttendanceSheet(req: AuthRequest, res: Response) {
     const schoolId = req.user?.schoolId;
     const { class_id, date } = req.query;
 
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
     if (!class_id || !date) {
-      return res.status(400).json({ error: 'Class ID and Date are required.' });
+      return res.status(400).json({ error: "Class ID and Date are required." });
     }
 
     const classId = class_id as string;
@@ -361,7 +418,7 @@ export async function createAttendanceSheet(req: AuthRequest, res: Response) {
     });
 
     if (!schoolClass || schoolClass.schoolId !== schoolId) {
-      return res.status(404).json({ error: 'Class not found.' });
+      return res.status(404).json({ error: "Class not found." });
     }
 
     // Get all students enrolled in this class
@@ -401,20 +458,25 @@ export async function createAttendanceSheet(req: AuthRequest, res: Response) {
       existingAttendance,
     });
   } catch (err) {
-    console.error('Create attendance sheet error:', err);
-    return res.status(500).json({ error: 'Internal server error fetching attendance sheet.' });
+    console.error("Create attendance sheet error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error fetching attendance sheet." });
   }
 }
 
 export async function storeAttendance(req: AuthRequest, res: Response) {
   try {
     const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ error: 'Active school required.' });
+    if (!schoolId)
+      return res.status(400).json({ error: "Active school required." });
 
     const { class_id, date, attendance } = req.body;
 
-    if (!class_id || !date || !attendance || typeof attendance !== 'object') {
-      return res.status(400).json({ error: 'Class ID, date, and attendance map are required.' });
+    if (!class_id || !date || !attendance || typeof attendance !== "object") {
+      return res
+        .status(400)
+        .json({ error: "Class ID, date, and attendance map are required." });
     }
 
     const parsedDate = new Date(date);
@@ -445,24 +507,28 @@ export async function storeAttendance(req: AuthRequest, res: Response) {
       });
 
       // Simulate sending notifications for absent students
-      if (status === 'absent') {
+      if (status === "absent") {
         const studentObj = await prisma.student.findUnique({
           where: { id: studentId },
           include: { user: true },
         });
         if (studentObj && studentObj.user) {
-          console.log(`[ALERT] Absent Notification: Student ${studentObj.user.name} was marked absent on ${parsedDate.toDateString()}. Sending alert to parent email: ${studentObj.user.email}`);
+          console.log(
+            `[ALERT] Absent Notification: Student ${studentObj.user.name} was marked absent on ${parsedDate.toDateString()}. Sending alert to parent email: ${studentObj.user.email}`,
+          );
           absentNotificationsSent.push(studentObj.user.name);
         }
       }
     }
 
     return res.json({
-      message: 'Attendance updated successfully.',
+      message: "Attendance updated successfully.",
       notifications: absentNotificationsSent,
     });
   } catch (err) {
-    console.error('Store attendance error:', err);
-    return res.status(500).json({ error: 'Internal server error storing attendance.' });
+    console.error("Store attendance error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error storing attendance." });
   }
 }

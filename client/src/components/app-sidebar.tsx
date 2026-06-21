@@ -24,6 +24,11 @@ import {
   Receipt,
   UserCheck,
   Settings,
+  Calendar,
+  Award,
+  Library,
+  CalendarDays,
+  Megaphone,
 } from "lucide-react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -41,6 +46,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     { title: "Subjects", url: "/dashboard/subjects", icon: BookOpen },
     { title: "Students", url: "/dashboard/students", icon: Users },
     { title: "Attendance", url: "/dashboard/attendance", icon: ClipboardList },
+    { title: "Timetable", url: "/dashboard/timetable", icon: Calendar },
+    { title: "Exams & Results", url: "/dashboard/exams", icon: Award },
+    { title: "Library", url: "/dashboard/library", icon: Library },
   ];
 
   const financialItems = [
@@ -49,6 +57,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   ];
 
   const managementItems = [
+    { title: "Notice Board", url: "/dashboard/notices", icon: Megaphone },
+    { title: "Staff Leaves", url: "/dashboard/leaves", icon: CalendarDays },
     { title: "Staff & Invites", url: "/dashboard/team", icon: UserCheck },
     { title: "Settings", url: "/dashboard/settings", icon: Settings },
   ];

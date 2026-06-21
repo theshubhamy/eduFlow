@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { prisma } from "../db";
+import { prisma } from "../config/db";
 import { Prisma } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth";
 

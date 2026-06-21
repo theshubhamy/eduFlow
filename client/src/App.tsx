@@ -8,8 +8,13 @@ import ClassesPage from "@/app/dashboard/classes";
 import SubjectsPage from "@/app/dashboard/subjects";
 import StudentsPage from "@/app/dashboard/students";
 import AttendancePage from "@/app/dashboard/attendance";
+import TimetablePage from "@/app/dashboard/timetable";
+import ExamsPage from "@/app/dashboard/exams";
+import LibraryPage from "@/app/dashboard/library";
 import FeesPage from "@/app/dashboard/fees";
 import PaymentsPage from "@/app/dashboard/payments";
+import LeavesPage from "@/app/dashboard/leaves";
+import NoticesPage from "@/app/dashboard/notices";
 import TeamPage from "@/app/dashboard/team";
 import SettingsPage from "@/app/dashboard/settings";
 
@@ -33,8 +38,13 @@ function App() {
         <Route path="subjects" element={<SubjectsPage />} />
         <Route path="students" element={<StudentsPage />} />
         <Route path="attendance" element={<AttendancePage />} />
+        <Route path="timetable" element={<TimetablePage />} />
+        <Route path="exams" element={<ExamsPage />} />
+        <Route path="library" element={<LibraryPage />} />
         <Route path="fees" element={<FeesPage />} />
         <Route path="payments" element={<PaymentsPage />} />
+        <Route path="leaves" element={<LeavesPage />} />
+        <Route path="notices" element={<NoticesPage />} />
         <Route path="team" element={<TeamPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

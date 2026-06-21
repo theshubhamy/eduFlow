@@ -40,6 +40,11 @@ model User {
   sentInvitations         TeamInvitation[] @relation("SentInvitations")
   students                Student[]
   subjects                Subject[]
+  notices                 Notice[]
+  bookLoans               BookLoan[]
+  leaveRequests           LeaveRequest[]   @relation("UserLeaves")
+  approvedLeaves          LeaveRequest[]   @relation("ApprovedLeaves")
+  timetableEntries        TimetableEntry[]
 }
 
 model School {
@@ -61,6 +66,11 @@ model School {
   feeCategories   FeeCategory[]
   feeAllocations  FeeAllocation[]
   feePayments     FeePayment[]
+  notices         Notice[]
+  exams           Exam[]
+  books           Book[]
+  leaveRequests   LeaveRequest[]
+  timetableEntries TimetableEntry[]
 }
 
 model Team {
@@ -123,6 +133,8 @@ model SchoolClass {
   students   Student[]
   subjects   Subject[]
   feeAllocations FeeAllocation[]
+  exams      Exam[]
+  timetableEntries TimetableEntry[]
 
   @@map("classes")
 }
@@ -143,6 +155,8 @@ model Student {
   attendance    Attendance[]
   feeAllocations FeeAllocation[]
   feePayments    FeePayment[]
+  examResults   ExamResult[]
+  bookLoans     BookLoan[]
 
   @@map("students")
 }
@@ -160,6 +174,8 @@ model Subject {
   school      School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   schoolClass SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
   teacher     User        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  exams       Exam[]
+  timetableEntries TimetableEntry[]
 
   @@map("subjects")
 }
@@ -237,4 +253,133 @@ model FeePayment {
   feeAllocation FeeAllocation @relation(fields: [feeAllocationId], references: [id], onDelete: Cascade)
 
   @@map("fee_payments")
+}
+
+model Notice {
+  id             String   @id @default(uuid())
+  schoolId       String   @map("school_id")
+  title          String
+  content        String   @db.Text
+  targetAudience String   @map("target_audience")
+  createdById    String   @map("created_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdBy      User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@map("notices")
+}
+
+model Exam {
+  id             String   @id @default(uuid())
+  schoolId       String   @map("school_id")
+  classId        String   @map("class_id")
+  subjectId      String   @map("subject_id")
+  name           String
+  examDate       DateTime @map("exam_date")
+  maxMarks       Int      @map("max_marks")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  schoolClass    SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject        Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  results        ExamResult[]
+
+  @@map("exams")
+}
+
+model ExamResult {
+  id             String   @id @default(uuid())
+  examId         String   @map("exam_id")
+  studentId      String   @map("student_id")
+  marksObtained  Decimal  @map("marks_obtained") @db.Decimal(5, 2)
+  grade          String
+  remarks        String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId])
+  @@map("exam_results")
+}
+
+model Book {
+  id             String   @id @default(uuid())
+  schoolId       String   @map("school_id")
+  title          String
+  author         String
+  isbn           String?
+  quantity       Int      @default(1)
+  available      Int      @default(1)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  loans          BookLoan[]
+
+  @@map("books")
+}
+
+model BookLoan {
+  id             String   @id @default(uuid())
+  bookId         String   @map("book_id")
+  studentId      String?  @map("student_id")
+  userId         String?  @map("user_id")
+  loanDate       DateTime @default(now()) @map("loan_date")
+  returnDate     DateTime? @map("return_date")
+  status         String   @default("issued")
+  fineAmount     Decimal  @default(0) @map("fine_amount") @db.Decimal(10, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  book           Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  student        Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("book_loans")
+}
+
+model LeaveRequest {
+  id             String   @id @default(uuid())
+  schoolId       String   @map("school_id")
+  userId         String   @map("user_id")
+  type           String
+  startDate      DateTime @map("start_date")
+  endDate        DateTime @map("end_date")
+  reason         String   @db.Text
+  status         String   @default("pending")
+  approvedById   String?  @map("approved_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user           User     @relation("UserLeaves", fields: [userId], references: [id], onDelete: Cascade)
+  approvedBy     User?    @relation("ApprovedLeaves", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@map("leave_requests")
+}
+
+model TimetableEntry {
+  id             String   @id @default(uuid())
+  schoolId       String   @map("school_id")
+  classId        String   @map("class_id")
+  subjectId      String   @map("subject_id")
+  teacherId      String?  @map("teacher_id")
+  dayOfWeek      Int      @map("day_of_week")
+  startTime      String   @map("start_time")
+  endTime        String   @map("end_time")
+  room           String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  schoolClass    SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject        Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher        User?    @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  @@map("timetable_entries")
 }

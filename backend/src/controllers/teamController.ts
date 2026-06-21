@@ -1,8 +1,8 @@
-import { Response } from 'express';
-import crypto from 'crypto';
-import { prisma } from '../db';
-import { AuthRequest } from '../middleware/auth';
-import { TeamRole } from '@prisma/client';
+import { Response } from "express";
+import crypto from "crypto";
+import { prisma } from "../config/db";
+import { AuthRequest } from "../middleware/auth";
+import { TeamRole } from "@prisma/client";
 
 export async function createTeam(req: AuthRequest, res: Response) {
   try {
@@ -10,10 +10,13 @@ export async function createTeam(req: AuthRequest, res: Response) {
     const userId = req.user?.id;
     const schoolId = req.user?.schoolId;
 
-    if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
-    if (!name) return res.status(400).json({ error: 'Team name is required.' });
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
+    if (!name) return res.status(400).json({ error: "Team name is required." });
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + crypto.randomBytes(4).toString('hex');
+    const slug =
+      name.toLowerCase().replace(/[^a-z0-9]+/g, "-") +
+      "-" +
+      crypto.randomBytes(4).toString("hex");
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create Team
@@ -44,12 +47,14 @@ export async function createTeam(req: AuthRequest, res: Response) {
     });
 
     return res.status(201).json({
-      message: 'Team created successfully.',
+      message: "Team created successfully.",
       team: result,
     });
   } catch (err) {
-    console.error('Create team error:', err);
-    return res.status(500).json({ error: 'Internal server error creating team.' });
+    console.error("Create team error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error creating team." });
   }
 }
 
@@ -59,16 +64,23 @@ export async function updateTeam(req: AuthRequest, res: Response) {
     const { name } = req.body;
     const userId = req.user?.id;
 
-    if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
-    if (!name) return res.status(400).json({ error: 'Team name is required.' });
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
+    if (!name) return res.status(400).json({ error: "Team name is required." });
 
     // Validate if user has update permission (Owner/Admin)
     const membership = await prisma.teamMember.findUnique({
       where: { teamId_userId: { teamId, userId } },
     });
 
-    if (!membership || (membership.role !== 'owner' && membership.role !== 'admin' && membership.role !== 'principal')) {
-      return res.status(403).json({ error: 'You do not have permission to update this team.' });
+    if (
+      !membership ||
+      (membership.role !== "owner" &&
+        membership.role !== "admin" &&
+        membership.role !== "principal")
+    ) {
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to update this team." });
     }
 
     const updatedTeam = await prisma.team.update({
@@ -77,12 +89,14 @@ export async function updateTeam(req: AuthRequest, res: Response) {
     });
 
     return res.json({
-      message: 'Team updated successfully.',
+      message: "Team updated successfully.",
       team: updatedTeam,
     });
   } catch (err) {
-    console.error('Update team error:', err);
-    return res.status(500).json({ error: 'Internal server error updating team.' });
+    console.error("Update team error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error updating team." });
   }
 }
 
@@ -91,15 +105,17 @@ export async function deleteTeam(req: AuthRequest, res: Response) {
     const { teamId } = req.params;
     const userId = req.user?.id;
 
-    if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
 
     // Validate ownership
     const membership = await prisma.teamMember.findUnique({
       where: { teamId_userId: { teamId, userId } },
     });
 
-    if (!membership || membership.role !== 'owner') {
-      return res.status(403).json({ error: 'Only the team owner can delete the team.' });
+    if (!membership || membership.role !== "owner") {
+      return res
+        .status(403)
+        .json({ error: "Only the team owner can delete the team." });
     }
 
     // Delete team inside transaction
@@ -120,10 +136,12 @@ export async function deleteTeam(req: AuthRequest, res: Response) {
       await tx.team.delete({ where: { id: teamId } });
     });
 
-    return res.json({ message: 'Team deleted successfully.' });
+    return res.json({ message: "Team deleted successfully." });
   } catch (err) {
-    console.error('Delete team error:', err);
-    return res.status(500).json({ error: 'Internal server error deleting team.' });
+    console.error("Delete team error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error deleting team." });
   }
 }
 
@@ -132,7 +150,7 @@ export async function switchTeam(req: AuthRequest, res: Response) {
     const { teamId } = req.params;
     const userId = req.user?.id;
 
-    if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
 
     // Verify member belongs to team
     const membership = await prisma.teamMember.findUnique({
@@ -140,7 +158,9 @@ export async function switchTeam(req: AuthRequest, res: Response) {
     });
 
     if (!membership) {
-      return res.status(403).json({ error: 'You are not a member of this team.' });
+      return res
+        .status(403)
+        .json({ error: "You are not a member of this team." });
     }
 
     const updatedUser = await prisma.user.update({
@@ -149,7 +169,7 @@ export async function switchTeam(req: AuthRequest, res: Response) {
     });
 
     return res.json({
-      message: 'Switched team successfully.',
+      message: "Switched team successfully.",
       user: {
         id: updatedUser.id,
         name: updatedUser.name,
@@ -160,8 +180,10 @@ export async function switchTeam(req: AuthRequest, res: Response) {
       },
     });
   } catch (err) {
-    console.error('Switch team error:', err);
-    return res.status(500).json({ error: 'Internal server error switching team.' });
+    console.error("Switch team error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error switching team." });
   }
 }
 
@@ -171,16 +193,23 @@ export async function updateMemberRole(req: AuthRequest, res: Response) {
     const { role } = req.body;
     const userId = req.user?.id;
 
-    if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
-    if (!role) return res.status(400).json({ error: 'Role is required.' });
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
+    if (!role) return res.status(400).json({ error: "Role is required." });
 
     // Check if current user is owner or admin
     const currentUserMembership = await prisma.teamMember.findUnique({
       where: { teamId_userId: { teamId, userId } },
     });
 
-    if (!currentUserMembership || (currentUserMembership.role !== 'owner' && currentUserMembership.role !== 'admin' && currentUserMembership.role !== 'principal')) {
-      return res.status(403).json({ error: 'Unauthorized permissions to update member role.' });
+    if (
+      !currentUserMembership ||
+      (currentUserMembership.role !== "owner" &&
+        currentUserMembership.role !== "admin" &&
+        currentUserMembership.role !== "principal")
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized permissions to update member role." });
     }
 
     // Check target membership exists
@@ -189,11 +218,11 @@ export async function updateMemberRole(req: AuthRequest, res: Response) {
     });
 
     if (!targetMembership) {
-      return res.status(404).json({ error: 'Team member not found.' });
+      return res.status(404).json({ error: "Team member not found." });
     }
 
-    if (targetMembership.role === 'owner') {
-      return res.status(400).json({ error: 'Cannot modify Owner role.' });
+    if (targetMembership.role === "owner") {
+      return res.status(400).json({ error: "Cannot modify Owner role." });
     }
 
     const updatedMembership = await prisma.teamMember.update({
@@ -202,12 +231,14 @@ export async function updateMemberRole(req: AuthRequest, res: Response) {
     });
 
     return res.json({
-      message: 'Member role updated successfully.',
+      message: "Member role updated successfully.",
       member: updatedMembership,
     });
   } catch (err) {
-    console.error('Update member role error:', err);
-    return res.status(500).json({ error: 'Internal server error updating member role.' });
+    console.error("Update member role error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error updating member role." });
   }
 }
 
@@ -216,7 +247,7 @@ export async function removeMember(req: AuthRequest, res: Response) {
     const { teamId, memberUserId } = req.params;
     const userId = req.user?.id;
 
-    if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
 
     // Allow user to leave team, or owner/admin to remove user
     const isSelfLeaving = userId === memberUserId;
@@ -226,11 +257,18 @@ export async function removeMember(req: AuthRequest, res: Response) {
     });
 
     if (!currentUserMembership) {
-      return res.status(403).json({ error: 'You are not part of this team.' });
+      return res.status(403).json({ error: "You are not part of this team." });
     }
 
-    if (!isSelfLeaving && currentUserMembership.role !== 'owner' && currentUserMembership.role !== 'admin' && currentUserMembership.role !== 'principal') {
-      return res.status(403).json({ error: 'Unauthorized permissions to remove member.' });
+    if (
+      !isSelfLeaving &&
+      currentUserMembership.role !== "owner" &&
+      currentUserMembership.role !== "admin" &&
+      currentUserMembership.role !== "principal"
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized permissions to remove member." });
     }
 
     // Find target member
@@ -239,11 +277,13 @@ export async function removeMember(req: AuthRequest, res: Response) {
     });
 
     if (!targetMembership) {
-      return res.status(404).json({ error: 'Member not found.' });
+      return res.status(404).json({ error: "Member not found." });
     }
 
-    if (targetMembership.role === 'owner') {
-      return res.status(400).json({ error: 'Owner cannot be removed. Transfer ownership or delete team.' });
+    if (targetMembership.role === "owner") {
+      return res.status(400).json({
+        error: "Owner cannot be removed. Transfer ownership or delete team.",
+      });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -258,10 +298,12 @@ export async function removeMember(req: AuthRequest, res: Response) {
       });
     });
 
-    return res.json({ message: 'Member removed successfully.' });
+    return res.json({ message: "Member removed successfully." });
   } catch (err) {
-    console.error('Remove member error:', err);
-    return res.status(500).json({ error: 'Internal server error removing member.' });
+    console.error("Remove member error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error removing member." });
   }
 }
 
@@ -271,9 +313,9 @@ export async function inviteMember(req: AuthRequest, res: Response) {
     const { email, role } = req.body;
     const userId = req.user?.id;
 
-    if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
     if (!email || !role) {
-      return res.status(400).json({ error: 'Email and role are required.' });
+      return res.status(400).json({ error: "Email and role are required." });
     }
 
     // Validate permissions (Owner/Admin)
@@ -281,8 +323,15 @@ export async function inviteMember(req: AuthRequest, res: Response) {
       where: { teamId_userId: { teamId, userId } },
     });
 
-    if (!membership || (membership.role !== 'owner' && membership.role !== 'admin' && membership.role !== 'principal')) {
-      return res.status(403).json({ error: 'Unauthorized permissions to invite.' });
+    if (
+      !membership ||
+      (membership.role !== "owner" &&
+        membership.role !== "admin" &&
+        membership.role !== "principal")
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized permissions to invite." });
     }
 
     // Check if already a member
@@ -292,12 +341,14 @@ export async function inviteMember(req: AuthRequest, res: Response) {
         where: { teamId_userId: { teamId, userId: existingUser.id } },
       });
       if (isAlreadyMember) {
-        return res.status(400).json({ error: 'User is already a member of this team.' });
+        return res
+          .status(400)
+          .json({ error: "User is already a member of this team." });
       }
     }
 
     // Generate random code for invitation
-    const code = crypto.randomBytes(32).toString('hex');
+    const code = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
 
@@ -313,7 +364,7 @@ export async function inviteMember(req: AuthRequest, res: Response) {
     });
 
     return res.status(201).json({
-      message: 'Invitation sent successfully.',
+      message: "Invitation sent successfully.",
       invitation: {
         code: invitation.code,
         email: invitation.email,
@@ -322,8 +373,10 @@ export async function inviteMember(req: AuthRequest, res: Response) {
       },
     });
   } catch (err) {
-    console.error('Invite member error:', err);
-    return res.status(500).json({ error: 'Internal server error inviting member.' });
+    console.error("Invite member error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error inviting member." });
   }
 }
 
@@ -332,25 +385,34 @@ export async function cancelInvitation(req: AuthRequest, res: Response) {
     const { teamId, inviteCode } = req.params;
     const userId = req.user?.id;
 
-    if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
 
     // Validate permissions
     const membership = await prisma.teamMember.findUnique({
       where: { teamId_userId: { teamId, userId } },
     });
 
-    if (!membership || (membership.role !== 'owner' && membership.role !== 'admin' && membership.role !== 'principal')) {
-      return res.status(403).json({ error: 'Unauthorized permissions to cancel invitations.' });
+    if (
+      !membership ||
+      (membership.role !== "owner" &&
+        membership.role !== "admin" &&
+        membership.role !== "principal")
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized permissions to cancel invitations." });
     }
 
     await prisma.teamInvitation.delete({
       where: { code: inviteCode },
     });
 
-    return res.json({ message: 'Invitation cancelled successfully.' });
+    return res.json({ message: "Invitation cancelled successfully." });
   } catch (err) {
-    console.error('Cancel invitation error:', err);
-    return res.status(500).json({ error: 'Internal server error cancelling invitation.' });
+    console.error("Cancel invitation error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error cancelling invitation." });
   }
 }
 
@@ -359,7 +421,7 @@ export async function acceptInvitation(req: AuthRequest, res: Response) {
     const { inviteCode } = req.params;
     const userId = req.user?.id;
 
-    if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
 
     const invitation = await prisma.teamInvitation.findUnique({
       where: { code: inviteCode },
@@ -367,11 +429,13 @@ export async function acceptInvitation(req: AuthRequest, res: Response) {
     });
 
     if (!invitation || invitation.acceptedAt) {
-      return res.status(400).json({ error: 'Invalid or already accepted invitation.' });
+      return res
+        .status(400)
+        .json({ error: "Invalid or already accepted invitation." });
     }
 
     if (invitation.expiresAt && invitation.expiresAt < new Date()) {
-      return res.status(400).json({ error: 'Invitation has expired.' });
+      return res.status(400).json({ error: "Invitation has expired." });
     }
 
     // Accept invitation inside transaction
@@ -397,7 +461,7 @@ export async function acceptInvitation(req: AuthRequest, res: Response) {
     ]);
 
     return res.json({
-      message: 'Invitation accepted. Joined team successfully.',
+      message: "Invitation accepted. Joined team successfully.",
       team: {
         id: invitation.team.id,
         name: invitation.team.name,
@@ -405,8 +469,10 @@ export async function acceptInvitation(req: AuthRequest, res: Response) {
       },
     });
   } catch (err) {
-    console.error('Accept invitation error:', err);
-    return res.status(500).json({ error: 'Internal server error accepting invitation.' });
+    console.error("Accept invitation error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error accepting invitation." });
   }
 }
 
@@ -416,7 +482,7 @@ export async function listMembers(req: AuthRequest, res: Response) {
     const currentTeamId = req.user?.currentTeamId;
 
     if (!userId || !currentTeamId) {
-      return res.status(400).json({ error: 'Active team required.' });
+      return res.status(400).json({ error: "Active team required." });
     }
 
     const team = await prisma.team.findUnique({
@@ -434,27 +500,28 @@ export async function listMembers(req: AuthRequest, res: Response) {
     });
 
     if (!team) {
-      return res.status(404).json({ error: 'Team not found.' });
+      return res.status(404).json({ error: "Team not found." });
     }
 
-    const userRole = team.members.find((m) => m.userId === userId)?.role || 'member';
+    const userRole =
+      team.members.find((m) => m.userId === userId)?.role || "member";
 
     const permissions = {
-      canUpdateTeam: ['owner', 'admin', 'principal'].includes(userRole),
-      canDeleteTeam: userRole === 'owner',
-      canAddMember: ['owner', 'admin', 'principal'].includes(userRole),
-      canUpdateMember: ['owner', 'admin', 'principal'].includes(userRole),
-      canRemoveMember: ['owner', 'admin', 'principal'].includes(userRole),
+      canUpdateTeam: ["owner", "admin", "principal"].includes(userRole),
+      canDeleteTeam: userRole === "owner",
+      canAddMember: ["owner", "admin", "principal"].includes(userRole),
+      canUpdateMember: ["owner", "admin", "principal"].includes(userRole),
+      canRemoveMember: ["owner", "admin", "principal"].includes(userRole),
     };
 
     const availableRoles = [
-      { value: 'admin', label: 'Admin' },
-      { value: 'principal', label: 'Principal' },
-      { value: 'hod', label: 'Head of Department' },
-      { value: 'admission', label: 'Admission' },
-      { value: 'accounts', label: 'Accounts' },
-      { value: 'faculty', label: 'Faculty' },
-      { value: 'member', label: 'Member' },
+      { value: "admin", label: "Admin" },
+      { value: "principal", label: "Principal" },
+      { value: "hod", label: "Head of Department" },
+      { value: "admission", label: "Admission" },
+      { value: "accounts", label: "Accounts" },
+      { value: "faculty", label: "Faculty" },
+      { value: "member", label: "Member" },
     ];
 
     return res.json({
@@ -482,8 +549,9 @@ export async function listMembers(req: AuthRequest, res: Response) {
       availableRoles,
     });
   } catch (err) {
-    console.error('List members error:', err);
-    return res.status(500).json({ error: 'Internal server error listing members.' });
+    console.error("List members error:", err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error listing members." });
   }
 }
-
