@@ -1,5 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import api from '@/lib/api';
 import {
   Users,
   School,
@@ -16,28 +14,10 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface DashboardData {
-  stats: {
-    studentsCount: number;
-    classesCount: number;
-    subjectsCount: number;
-    revenueCollected: number;
-  };
-  recentPayments: Array<{
-    id: string;
-    studentName: string;
-    amount: number;
-    date: string;
-    categoryName: string;
-  }>;
-}
+import { useDashboardStats } from "@/hooks/queries/useFeatures";
 
 export default function DashboardOverview() {
-  const { data, isLoading, error } = useQuery<DashboardData>({
-    queryKey: ["dashboardStats"],
-    queryFn: () => api.get("/api/dashboard").then(res => res.data),
-  });
+  const { data, isLoading, error } = useDashboardStats();
 
   if (isLoading) {
     return (
