@@ -1,11 +1,24 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
-import { ClipboardList, Check, Loader2, Info, Send, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/lib/api';
+import {
+  ClipboardList,
+  Check,
+  Loader2,
+  Info,
+  Send,
+  AlertCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ClassItem {
   id: string;
@@ -40,24 +53,38 @@ interface RosterResponse {
 
 export default function AttendancePage() {
   const queryClient = useQueryClient();
-  const [selectedClassId, setSelectedClassId] = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
-  const [attendanceState, setAttendanceState] = useState<Record<string, string>>({});
-  const [successMessage, setSuccessMessage] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState('');
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split('T')[0],
+  );
+  const [attendanceState, setAttendanceState] = useState<
+    Record<string, string>
+  >({});
+  const [successMessage, setSuccessMessage] = useState('');
   const [sentAlerts, setSentAlerts] = useState<string[]>([]);
-  const [saveError, setSaveError] = useState("");
+  const [saveError, setSaveError] = useState('');
 
   // 1. Fetch available classes
   const { data: classesData, isLoading: isClassesLoading } = useQuery({
-    queryKey: ["attendanceClasses"],
-    queryFn: () => apiFetch<ClassesResponse>("/api/attendance"),
+    queryKey: ['attendanceClasses'],
+    queryFn: () =>
+      api.get<ClassesResponse>('/api/attendance').then(res => res.data),
   });
 
   // 2. Fetch roster & existing attendance
-  const { data: rosterData, isLoading: isRosterLoading, refetch: refetchRoster, isFetching: isRosterFetching } = useQuery({
-    queryKey: ["attendanceRoster", selectedClassId, selectedDate],
+  const {
+    data: rosterData,
+    isLoading: isRosterLoading,
+    refetch: refetchRoster,
+    isFetching: isRosterFetching,
+  } = useQuery({
+    queryKey: ['attendanceRoster', selectedClassId, selectedDate],
     queryFn: () =>
-      apiFetch<RosterResponse>(`/api/attendance/create?class_id=${selectedClassId}&date=${selectedDate}`),
+      api
+        .get<RosterResponse>(
+          `/api/attendance/create?class_id=${selectedClassId}&date=${selectedDate}`,
+        )
+        .then(res => res.data),
     enabled: !!selectedClassId && !!selectedDate,
   });
 
@@ -66,35 +93,41 @@ export default function AttendancePage() {
     if (rosterData) {
       const state: Record<string, string> = {};
       rosterData.students.forEach((student: StudentRoster) => {
-        state[student.id] = rosterData.existingAttendance[student.id]?.status || "present";
+        state[student.id] =
+          rosterData.existingAttendance[student.id]?.status || 'present';
       });
       setAttendanceState(state);
-      setSuccessMessage("");
+      setSuccessMessage('');
       setSentAlerts([]);
-      setSaveError("");
+      setSaveError('');
     }
   }, [rosterData]);
 
   const saveAttendanceMutation = useMutation({
-    mutationFn: (payload: { class_id: string; date: string; attendance: Record<string, string> }) =>
-      apiFetch("/api/attendance", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["attendanceRoster", selectedClassId, selectedDate] });
-      setSuccessMessage("Attendance saved successfully.");
+    mutationFn: (payload: {
+      class_id: string;
+      date: string;
+      attendance: Record<string, string>;
+    }) =>
+      api
+        .post('/api/attendance', JSON.stringify(payload))
+        .then(res => res.data),
+    onSuccess: data => {
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceRoster', selectedClassId, selectedDate],
+      });
+      setSuccessMessage('Attendance saved successfully.');
       setSentAlerts(data.notifications || []);
-      setSaveError("");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setSaveError('');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     onError: (err: any) => {
-      setSaveError(err.message || "Failed to save attendance.");
+      setSaveError(err.message || 'Failed to save attendance.');
     },
   });
 
   const handleStatusChange = (studentId: string, status: string) => {
-    setAttendanceState((prev) => ({
+    setAttendanceState(prev => ({
       ...prev,
       [studentId]: status,
     }));
@@ -111,7 +144,7 @@ export default function AttendancePage() {
 
   const handleSave = () => {
     if (!selectedClassId || !selectedDate) {
-      setSaveError("Please select both a class and a date.");
+      setSaveError('Please select both a class and a date.');
       return;
     }
     saveAttendanceMutation.mutate({
@@ -126,9 +159,12 @@ export default function AttendancePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-left">Attendance</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-left">
+          Attendance
+        </h1>
         <p className="text-muted-foreground text-left text-sm mt-1">
-          Take or update daily student attendance rosters. Alerts are automatically sent to parents for absences.
+          Take or update daily student attendance rosters. Alerts are
+          automatically sent to parents for absences.
         </p>
       </div>
 
@@ -140,7 +176,7 @@ export default function AttendancePage() {
             {sentAlerts.length > 0 && (
               <span className="font-normal text-xs text-emerald-600/80 dark:text-emerald-500/80 mt-1 flex items-center gap-1">
                 <Send className="size-3" />
-                Simulated SMS alerts sent to parents of: {sentAlerts.join(", ")}
+                Simulated SMS alerts sent to parents of: {sentAlerts.join(', ')}
               </span>
             )}
           </div>
@@ -159,7 +195,10 @@ export default function AttendancePage() {
         <CardContent className="p-6">
           <div className="grid gap-4 md:grid-cols-3 items-end">
             <div className="space-y-2 text-left">
-              <label htmlFor="classSelect" className="text-sm font-semibold text-foreground">
+              <label
+                htmlFor="classSelect"
+                className="text-sm font-semibold text-foreground"
+              >
                 Select ClassRoom *
               </label>
               {isClassesLoading ? (
@@ -168,11 +207,11 @@ export default function AttendancePage() {
                 <select
                   id="classSelect"
                   value={selectedClassId}
-                  onChange={(e) => setSelectedClassId(e.target.value)}
+                  onChange={e => setSelectedClassId(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">Choose Class...</option>
-                  {classes.map((c) => (
+                  {classes.map(c => (
                     <option key={c.id} value={c.id}>
                       {c.name} - {c.section}
                     </option>
@@ -182,14 +221,17 @@ export default function AttendancePage() {
             </div>
 
             <div className="space-y-2 text-left">
-              <label htmlFor="dateSelect" className="text-sm font-semibold text-foreground">
+              <label
+                htmlFor="dateSelect"
+                className="text-sm font-semibold text-foreground"
+              >
                 Attendance Date *
               </label>
               <Input
                 id="dateSelect"
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={e => setSelectedDate(e.target.value)}
               />
             </div>
 
@@ -206,7 +248,7 @@ export default function AttendancePage() {
                     Syncing...
                   </>
                 ) : (
-                  "Refresh Sheet"
+                  'Refresh Sheet'
                 )}
               </Button>
             </div>
@@ -220,25 +262,31 @@ export default function AttendancePage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
             <ClipboardList className="size-6" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground">No Class Selected</h3>
+          <h3 className="font-semibold text-lg text-foreground">
+            No Class Selected
+          </h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm text-center">
-            Choose an active classroom and date to load the roster and mark student attendance.
+            Choose an active classroom and date to load the roster and mark
+            student attendance.
           </p>
         </Card>
       ) : isRosterLoading ? (
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row justify-between items-center pb-4 border-b border-border">
-            <Skeleton className="h-6 w-[200px]" />
+            <Skeleton className="h-6 w-50" />
             <div className="flex gap-2">
-              <Skeleton className="h-8 w-[80px]" />
-              <Skeleton className="h-8 w-[80px]" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20" />
             </div>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, idx) => (
-                <div key={idx} className="flex justify-between items-center py-2 border-b">
-                  <Skeleton className="h-5 w-[150px]" />
+                <div
+                  key={idx}
+                  className="flex justify-between items-center py-2 border-b"
+                >
+                  <Skeleton className="h-5 w-37.5" />
                   <div className="flex gap-2">
                     <Skeleton className="h-8 w-8 rounded-md" />
                     <Skeleton className="h-8 w-8 rounded-md" />
@@ -254,9 +302,12 @@ export default function AttendancePage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-500/10 text-yellow-500 mb-4">
             <Info className="size-6" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground">Empty Class Roster</h3>
+          <h3 className="font-semibold text-lg text-foreground">
+            Empty Class Roster
+          </h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm text-center">
-            There are no students enrolled in {rosterData.class.name} ({rosterData.class.section}) yet.
+            There are no students enrolled in {rosterData.class.name} (
+            {rosterData.class.section}) yet.
           </p>
         </Card>
       ) : rosterData ? (
@@ -267,12 +318,12 @@ export default function AttendancePage() {
                 Roster: {rosterData.class.name} ({rosterData.class.section})
               </CardTitle>
               <CardDescription>
-                Mark student statuses for{" "}
+                Mark student statuses for{' '}
                 {new Date(rosterData.date).toLocaleDateString(undefined, {
-                  weekday: "long",
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
+                  weekday: 'long',
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
                 })}
               </CardDescription>
             </div>
@@ -281,7 +332,7 @@ export default function AttendancePage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleMarkAll("present")}
+                onClick={() => handleMarkAll('present')}
                 className="text-xs cursor-pointer border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-500"
               >
                 Mark All Present
@@ -289,7 +340,7 @@ export default function AttendancePage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleMarkAll("absent")}
+                onClick={() => handleMarkAll('absent')}
                 className="text-xs cursor-pointer border-destructive/20 hover:bg-destructive/10 hover:text-destructive"
               >
                 Mark All Absent
@@ -299,8 +350,11 @@ export default function AttendancePage() {
           <CardContent className="p-0">
             <div className="divide-y divide-border/60">
               {rosterData.students.map((student: StudentRoster) => {
-                const currentStatus = attendanceState[student.id] || "present";
-                const isModified = currentStatus !== (rosterData.existingAttendance[student.id]?.status || "present");
+                const currentStatus = attendanceState[student.id] || 'present';
+                const isModified =
+                  currentStatus !==
+                  (rosterData.existingAttendance[student.id]?.status ||
+                    'present');
 
                 return (
                   <div
@@ -308,7 +362,9 @@ export default function AttendancePage() {
                     className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 gap-4 hover:bg-muted/10 transition-colors"
                   >
                     <div className="flex items-center gap-3 text-left">
-                      <div className="font-semibold text-foreground">{student.user.name}</div>
+                      <div className="font-semibold text-foreground">
+                        {student.user.name}
+                      </div>
                       {isModified && (
                         <span className="inline-flex items-center rounded bg-yellow-500/10 px-1.5 py-0.2 text-[10px] font-semibold text-yellow-600 dark:text-yellow-500">
                           Unsaved Change
@@ -320,11 +376,13 @@ export default function AttendancePage() {
                       {/* Present Button */}
                       <button
                         type="button"
-                        onClick={() => handleStatusChange(student.id, "present")}
+                        onClick={() =>
+                          handleStatusChange(student.id, 'present')
+                        }
                         className={`flex-1 sm:flex-initial text-xs font-semibold px-4 py-2 rounded-lg border transition-all cursor-pointer ${
-                          currentStatus === "present"
-                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-500 shadow-sm"
-                            : "bg-background border-border hover:bg-muted text-muted-foreground"
+                          currentStatus === 'present'
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-500 shadow-sm'
+                            : 'bg-background border-border hover:bg-muted text-muted-foreground'
                         }`}
                       >
                         Present
@@ -333,11 +391,11 @@ export default function AttendancePage() {
                       {/* Absent Button */}
                       <button
                         type="button"
-                        onClick={() => handleStatusChange(student.id, "absent")}
+                        onClick={() => handleStatusChange(student.id, 'absent')}
                         className={`flex-1 sm:flex-initial text-xs font-semibold px-4 py-2 rounded-lg border transition-all cursor-pointer ${
-                          currentStatus === "absent"
-                            ? "bg-destructive/10 border-destructive/30 text-destructive shadow-sm"
-                            : "bg-background border-border hover:bg-muted text-muted-foreground"
+                          currentStatus === 'absent'
+                            ? 'bg-destructive/10 border-destructive/30 text-destructive shadow-sm'
+                            : 'bg-background border-border hover:bg-muted text-muted-foreground'
                         }`}
                       >
                         Absent
@@ -346,11 +404,11 @@ export default function AttendancePage() {
                       {/* Late Button */}
                       <button
                         type="button"
-                        onClick={() => handleStatusChange(student.id, "late")}
+                        onClick={() => handleStatusChange(student.id, 'late')}
                         className={`flex-1 sm:flex-initial text-xs font-semibold px-4 py-2 rounded-lg border transition-all cursor-pointer ${
-                          currentStatus === "late"
-                            ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-500 shadow-sm"
-                            : "bg-background border-border hover:bg-muted text-muted-foreground"
+                          currentStatus === 'late'
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-500 shadow-sm'
+                            : 'bg-background border-border hover:bg-muted text-muted-foreground'
                         }`}
                       >
                         Late
@@ -365,7 +423,7 @@ export default function AttendancePage() {
               <Button
                 onClick={handleSave}
                 disabled={saveAttendanceMutation.isPending}
-                className="w-full sm:w-[180px] cursor-pointer"
+                className="w-full sm:w-45 cursor-pointer"
               >
                 {saveAttendanceMutation.isPending ? (
                   <>
@@ -373,7 +431,7 @@ export default function AttendancePage() {
                     Saving Sheet...
                   </>
                 ) : (
-                  "Save Attendance"
+                  'Save Attendance'
                 )}
               </Button>
             </div>

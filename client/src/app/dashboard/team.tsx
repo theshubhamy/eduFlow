@@ -1,18 +1,26 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, X, Shield, Mail, Trash2, Check, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Loader2,
+  X,
+  Shield,
+  Mail,
+  Trash2,
+  Check,
+  AlertCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Member {
   id: string;
@@ -53,79 +61,81 @@ export default function TeamPage() {
   const queryClient = useQueryClient();
   const { currentTeam, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    "members" | "invites" | "newSchool"
-  >("members");
+    'members' | 'invites' | 'newSchool'
+  >('members');
 
   // Form States
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("faculty");
-  const [newSchoolName, setNewSchoolName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('faculty');
+  const [newSchoolName, setNewSchoolName] = useState('');
 
   // Feedback States
-  const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const {
     data: teamData,
     isLoading,
     error,
   } = useQuery<TeamData>({
-    queryKey: ["teamMembers", currentTeam?.id],
-    queryFn: () => apiFetch("/api/members"),
+    queryKey: ['teamMembers', currentTeam?.id],
+    queryFn: () => api.get('/api/members').then(res => res.data),
     enabled: !!currentTeam?.id,
   });
 
   const inviteMutation = useMutation({
     mutationFn: (payload: { email: string; role: string }) =>
-      apiFetch(`/api/teams/${currentTeam.id}/invitations`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
+      api
+        .post(
+          `/api/teams/${currentTeam.id}/invitations`,
+          JSON.stringify(payload),
+        )
+        .then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["teamMembers", currentTeam?.id],
+        queryKey: ['teamMembers', currentTeam?.id],
       });
-      setInviteEmail("");
-      setInviteRole("faculty");
-      setSuccessMsg("Invitation sent successfully.");
-      setErrorMsg("");
+      setInviteEmail('');
+      setInviteRole('faculty');
+      setSuccessMsg('Invitation sent successfully.');
+      setErrorMsg('');
     },
     onError: (err: any) => {
-      setErrorMsg(err.message || "Failed to invite member.");
+      setErrorMsg(err.message || 'Failed to invite member.');
     },
   });
 
   const cancelInviteMutation = useMutation({
     mutationFn: (code: string) =>
-      apiFetch(`/api/teams/${currentTeam.id}/invitations/${code}`, {
-        method: "DELETE",
-      }),
+      api
+        .delete(`/api/teams/${currentTeam.id}/invitations/${code}`)
+        .then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["teamMembers", currentTeam?.id],
+        queryKey: ['teamMembers', currentTeam?.id],
       });
-      setSuccessMsg("Invitation cancelled successfully.");
-      setErrorMsg("");
+      setSuccessMsg('Invitation cancelled successfully.');
+      setErrorMsg('');
     },
     onError: (err: any) => {
-      setErrorMsg(err.message || "Failed to cancel invitation.");
+      setErrorMsg(err.message || 'Failed to cancel invitation.');
     },
   });
 
   const removeMemberMutation = useMutation({
     mutationFn: (memberUserId: string) =>
-      apiFetch(`/api/teams/${currentTeam.id}/members/${memberUserId}`, {
-        method: "DELETE",
-      }),
+      api
+        .delete(`/api/teams/${currentTeam.id}/members/${memberUserId}`)
+        .then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["teamMembers", currentTeam?.id],
+        queryKey: ['teamMembers', currentTeam?.id],
       });
-      setSuccessMsg("Staff member removed successfully.");
-      setErrorMsg("");
+      setSuccessMsg('Staff member removed successfully.');
+      setErrorMsg('');
     },
     onError: (err: any) => {
-      setErrorMsg(err.message || "Failed to remove staff member.");
+      setErrorMsg(err.message || 'Failed to remove staff member.');
     },
   });
 
@@ -137,44 +147,43 @@ export default function TeamPage() {
       memberUserId: string;
       role: string;
     }) =>
-      apiFetch(`/api/teams/${currentTeam.id}/members/${memberUserId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ role }),
-      }),
+      api
+        .patch(
+          `/api/teams/${currentTeam.id}/members/${memberUserId}`,
+          JSON.stringify({ role }),
+        )
+        .then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["teamMembers", currentTeam?.id],
+        queryKey: ['teamMembers', currentTeam?.id],
       });
-      setSuccessMsg("Member role updated successfully.");
-      setErrorMsg("");
+      setSuccessMsg('Member role updated successfully.');
+      setErrorMsg('');
     },
     onError: (err: any) => {
-      setErrorMsg(err.message || "Failed to update member role.");
+      setErrorMsg(err.message || 'Failed to update member role.');
     },
   });
 
   const createSchoolMutation = useMutation({
     mutationFn: (name: string) =>
-      apiFetch("/api/teams", {
-        method: "POST",
-        body: JSON.stringify({ name }),
-      }),
+      api.post('/api/teams', JSON.stringify({ name })).then(res => res.data),
     onSuccess: async () => {
       await refreshUser(); // refresh AuthContext to fetch the new team in switcher
-      setNewSchoolName("");
-      setSuccessMsg("New School context created and activated.");
-      setActiveTab("members");
-      setErrorMsg("");
+      setNewSchoolName('');
+      setSuccessMsg('New School context created and activated.');
+      setActiveTab('members');
+      setErrorMsg('');
     },
     onError: (err: any) => {
-      setErrorMsg(err.message || "Failed to create new school.");
+      setErrorMsg(err.message || 'Failed to create new school.');
     },
   });
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim() || !inviteRole) {
-      setErrorMsg("Email and role are required.");
+      setErrorMsg('Email and role are required.');
       return;
     }
     inviteMutation.mutate({
@@ -186,7 +195,7 @@ export default function TeamPage() {
   const handleCreateSchool = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSchoolName.trim()) {
-      setErrorMsg("School name is required.");
+      setErrorMsg('School name is required.');
       return;
     }
     createSchoolMutation.mutate(newSchoolName);
@@ -212,7 +221,7 @@ export default function TeamPage() {
       <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-6 text-destructive">
         <h2 className="text-lg font-bold">Error loading Staff Roster</h2>
         <p className="text-sm mt-1">
-          {error instanceof Error ? error.message : "Something went wrong."}
+          {error instanceof Error ? error.message : 'Something went wrong.'}
         </p>
       </div>
     );
@@ -225,7 +234,7 @@ export default function TeamPage() {
       <div className="text-left">
         <h1 className="text-3xl font-bold tracking-tight">Staff & Roles</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Currently managing:{" "}
+          Currently managing:{' '}
           <span className="font-semibold text-foreground">{team.name}</span>
         </p>
       </div>
@@ -250,49 +259,49 @@ export default function TeamPage() {
           <div className="flex border-b border-border gap-4">
             <button
               onClick={() => {
-                setActiveTab("members");
-                setErrorMsg("");
-                setSuccessMsg("");
+                setActiveTab('members');
+                setErrorMsg('');
+                setSuccessMsg('');
               }}
               className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-                activeTab === "members"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                activeTab === 'members'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Active Staff ({members.length})
             </button>
             <button
               onClick={() => {
-                setActiveTab("invites");
-                setErrorMsg("");
-                setSuccessMsg("");
+                setActiveTab('invites');
+                setErrorMsg('');
+                setSuccessMsg('');
               }}
               className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-                activeTab === "invites"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                activeTab === 'invites'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Pending Invites ({invitations.length})
             </button>
             <button
               onClick={() => {
-                setActiveTab("newSchool");
-                setErrorMsg("");
-                setSuccessMsg("");
+                setActiveTab('newSchool');
+                setErrorMsg('');
+                setSuccessMsg('');
               }}
               className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-                activeTab === "newSchool"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                activeTab === 'newSchool'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               New School Context
             </button>
           </div>
 
-          {activeTab === "members" && (
+          {activeTab === 'members' && (
             <Card className="border-border bg-card">
               <CardContent className="p-0">
                 <div className="relative w-full overflow-auto">
@@ -308,7 +317,7 @@ export default function TeamPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {members.map((member) => (
+                      {members.map(member => (
                         <tr
                           key={member.id}
                           className="border-b border-border/50 hover:bg-muted/30 transition-all"
@@ -321,10 +330,10 @@ export default function TeamPage() {
                           </td>
                           <td className="p-4">
                             {permissions.canUpdateMember &&
-                            member.role !== "owner" ? (
+                            member.role !== 'owner' ? (
                               <select
                                 value={member.role}
-                                onChange={(e) =>
+                                onChange={e =>
                                   updateRoleMutation.mutate({
                                     memberUserId: member.id,
                                     role: e.target.value,
@@ -332,7 +341,7 @@ export default function TeamPage() {
                                 }
                                 className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:ring-1 focus:ring-primary"
                               >
-                                {availableRoles.map((r) => (
+                                {availableRoles.map(r => (
                                   <option key={r.value} value={r.value}>
                                     {r.label}
                                   </option>
@@ -346,7 +355,7 @@ export default function TeamPage() {
                           </td>
                           {permissions.canRemoveMember && (
                             <td className="p-4 text-right pr-6">
-                              {member.role !== "owner" && (
+                              {member.role !== 'owner' && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -379,7 +388,7 @@ export default function TeamPage() {
             </Card>
           )}
 
-          {activeTab === "invites" && (
+          {activeTab === 'invites' && (
             <Card className="border-border bg-card">
               <CardContent className="p-0">
                 {invitations.length === 0 ? (
@@ -401,7 +410,7 @@ export default function TeamPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {invitations.map((invite) => (
+                        {invitations.map(invite => (
                           <tr
                             key={invite.code}
                             className="border-b border-border/50 hover:bg-muted/30 transition-all"
@@ -452,7 +461,7 @@ export default function TeamPage() {
             </Card>
           )}
 
-          {activeTab === "newSchool" && (
+          {activeTab === 'newSchool' && (
             <Card className="border-border bg-card">
               <CardHeader className="text-left pb-4 border-b border-border">
                 <CardTitle>Register New School / Team</CardTitle>
@@ -474,7 +483,7 @@ export default function TeamPage() {
                       id="schoolName"
                       placeholder="e.g. West Springfield High School"
                       value={newSchoolName}
-                      onChange={(e) => setNewSchoolName(e.target.value)}
+                      onChange={e => setNewSchoolName(e.target.value)}
                       required
                     />
                   </div>
@@ -483,8 +492,8 @@ export default function TeamPage() {
                     disabled={createSchoolMutation.isPending}
                   >
                     {createSchoolMutation.isPending
-                      ? "Onboarding..."
-                      : "Onboard New School"}
+                      ? 'Onboarding...'
+                      : 'Onboard New School'}
                   </Button>
                 </CardContent>
               </form>
@@ -516,7 +525,7 @@ export default function TeamPage() {
                       type="email"
                       placeholder="teacher@school.com"
                       value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
+                      onChange={e => setInviteEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -531,11 +540,11 @@ export default function TeamPage() {
                     <select
                       id="inviteRole"
                       value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value)}
+                      onChange={e => setInviteRole(e.target.value)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
                       required
                     >
-                      {availableRoles.map((role) => (
+                      {availableRoles.map(role => (
                         <option key={role.value} value={role.value}>
                           {role.label}
                         </option>
@@ -554,7 +563,7 @@ export default function TeamPage() {
                         Inviting...
                       </>
                     ) : (
-                      "Send Invite"
+                      'Send Invite'
                     )}
                   </Button>
                 </CardContent>

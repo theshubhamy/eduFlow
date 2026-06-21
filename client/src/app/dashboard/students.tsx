@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import api from '@/lib/api';
 import { Users, Plus, Loader2, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -53,21 +53,18 @@ export default function StudentsPage() {
 
   const { data: response, isLoading: isStudentsLoading, error } = useQuery<StudentsPaginatedResponse>({
     queryKey: ["students", currentPage],
-    queryFn: () => apiFetch(`/api/students?page=${currentPage}&limit=10`),
+    queryFn: () => api.get(`/api/students?page=${currentPage}&limit=10`).then(res => res.data),
   });
 
   const { data: classes = [], isLoading: isClassesLoading } = useQuery<ClassOption[]>({
     queryKey: ["admissionClasses"],
-    queryFn: () => apiFetch("/api/students/create"),
+    queryFn: () => api.get("/api/students/create").then(res => res.data),
     enabled: isModalOpen, // Only fetch options when the modal is opened
   });
 
   const admitStudentMutation = useMutation({
     mutationFn: (newStudent: any) =>
-      apiFetch("/api/students", {
-        method: "POST",
-        body: JSON.stringify(newStudent),
-      }),
+      api.post("/api/students", JSON.stringify(newStudent),).then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
       setIsModalOpen(false);

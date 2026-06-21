@@ -1,46 +1,46 @@
-import * as React from "react";
-import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import * as React from 'react';
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Loader2, AlertCircle } from "lucide-react";
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 export function LoginForm({
   className,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<'div'>) {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMsg("");
+    setErrorMsg('');
     try {
       await login(email, password);
-      navigate("/dashboard");
+      navigate('/dashboard');
     } catch (err: any) {
-      setErrorMsg(err.message || "Invalid credentials. Please try again.");
+      setErrorMsg(err.message || 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card className="overflow-hidden p-0 shadow-lg border-border">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form
@@ -71,7 +71,7 @@ export function LoginForm({
                   type="email"
                   placeholder="name@school.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   disabled={loading}
                   required
                 />
@@ -85,7 +85,7 @@ export function LoginForm({
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   disabled={loading}
                   required
                 />
@@ -103,13 +103,13 @@ export function LoginForm({
                       Logging in...
                     </>
                   ) : (
-                    "Login"
+                    'Login'
                   )}
                 </Button>
               </Field>
 
               <FieldDescription className="text-center mt-4">
-                Don&apos;t have an account?{" "}
+                Don&apos;t have an account?{' '}
                 <Link
                   to="/register"
                   className="underline hover:text-primary font-medium"

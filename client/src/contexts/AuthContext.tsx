@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { apiFetch, ApiError } from "@/lib/api";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import api, { ApiError } from '@/lib/api';
 
 export interface User {
   id: string;
@@ -36,7 +36,12 @@ export interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, companyName?: string) => Promise<void>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    companyName?: string,
+  ) => Promise<void>;
   logout: () => Promise<void>;
   switchSchool: (teamId: string) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -44,7 +49,9 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [school, setSchool] = useState<School | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -55,11 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchCurrentUser = async () => {
     try {
       setIsLoading(true);
-      const data = await apiFetch("/api/auth/me");
-      setUser(data.user);
-      setSchool(data.school);
-      setTeams(data.teams || []);
-      setCurrentTeam(data.currentTeam);
+      const data = await api.post('/api/auth/me');
+      setUser(data?.user);
+      setSchool(data?.school);
+      setTeams(data?.teams || []);
+      setCurrentTeam(data?.currentTeam);
       setError(null);
     } catch (err: any) {
       setUser(null);
@@ -82,32 +89,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setError(null);
     try {
-      await apiFetch("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
+      await api.post('/api/auth/login', {
+        email,
+        password,
       });
       await fetchCurrentUser();
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message || 'Login failed');
       throw err;
     }
   };
 
-  const register = async (name: string, email: string, password: string, companyName?: string) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    companyName?: string,
+  ) => {
     setError(null);
     try {
-      await apiFetch("/api/auth/register", {
-        method: "POST",
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          company_name: companyName,
-        }),
+      await api.post('/api/auth/register', {
+        name,
+        email,
+        password,
+        company_name: companyName,
       });
       await fetchCurrentUser();
     } catch (err: any) {
-      setError(err.message || "Registration failed");
+      setError(err.message || 'Registration failed');
       throw err;
     }
   };
@@ -115,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     setError(null);
     try {
-      await apiFetch("/api/auth/logout", { method: "POST" });
+      await api.post('/api/auth/logout');
     } catch (err: any) {
       // Even if network fails, clear local credentials
     } finally {
@@ -129,12 +138,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const switchSchool = async (teamId: string) => {
     setError(null);
     try {
-      await apiFetch(`/api/teams/${teamId}/switch`, {
-        method: "POST",
-      });
+      await api.post(`/api/teams/${teamId}/switch`);
       await fetchCurrentUser();
     } catch (err: any) {
-      setError(err.message || "Failed to switch school context");
+      setError(err.message || 'Failed to switch school context');
       throw err;
     }
   };
@@ -163,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

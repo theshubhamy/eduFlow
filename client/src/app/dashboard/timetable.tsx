@@ -1,12 +1,29 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Plus, X, Trash2, AlertCircle, Check, Loader2, MapPin, User, BookOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Calendar,
+  Plus,
+  X,
+  Trash2,
+  AlertCircle,
+  Check,
+  Loader2,
+  MapPin,
+  User,
+  BookOpen,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ClassItem {
   id: string;
@@ -51,100 +68,105 @@ interface TimetableResponse {
 }
 
 const DAYS_OF_WEEK = [
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
 ];
 
 export default function TimetablePage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [selectedClassId, setSelectedClassId] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form States
-  const [classId, setClassId] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-  const [teacherId, setTeacherId] = useState("");
-  const [dayOfWeek, setDayOfWeek] = useState("1");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [room, setRoom] = useState("");
-  const [submitError, setSubmitError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [classId, setClassId] = useState('');
+  const [subjectId, setSubjectId] = useState('');
+  const [teacherId, setTeacherId] = useState('');
+  const [dayOfWeek, setDayOfWeek] = useState('1');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [room, setRoom] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const userRole = user?.role || "member";
-  const isManager = ["owner", "admin", "principal"].includes(userRole);
+  const userRole = user?.role || 'member';
+  const isManager = ['owner', 'admin', 'principal'].includes(userRole);
 
   // Load Classes
-  const { data: classesData = [], isLoading: isClassesLoading } = useQuery<ClassItem[]>({
-    queryKey: ["classes"],
-    queryFn: () => apiFetch("/api/classes"),
+  const { data: classesData = [], isLoading: isClassesLoading } = useQuery<
+    ClassItem[]
+  >({
+    queryKey: ['classes'],
+    queryFn: () => api.get('/api/classes').then(res => res.data),
   });
 
   // Load Subjects
   const { data: subjectsData = [] } = useQuery<SubjectItem[]>({
-    queryKey: ["subjects"],
-    queryFn: () => apiFetch("/api/subjects"),
+    queryKey: ['subjects'],
+    queryFn: () => api.get('/api/subjects').then(res => res.data),
   });
 
   // Load Staff
   const { data: membersRes } = useQuery<{ members: MemberItem[] }>({
-    queryKey: ["members"],
-    queryFn: () => apiFetch("/api/members"),
+    queryKey: ['members'],
+    queryFn: () => api.get('/api/members').then(res => res.data),
     enabled: isModalOpen,
   });
 
   // Load Timetable Entries
-  const { data: timetableRes, isLoading: isTimetableLoading } = useQuery<TimetableResponse>({
-    queryKey: ["timetable", selectedClassId],
-    queryFn: () => apiFetch(`/api/timetable?class_id=${selectedClassId}`),
-  });
+  const { data: timetableRes, isLoading: isTimetableLoading } =
+    useQuery<TimetableResponse>({
+      queryKey: ['timetable', selectedClassId],
+      queryFn: () =>
+        api
+          .get(`/api/timetable?class_id=${selectedClassId}`)
+          .then(res => res.data),
+    });
 
   const createTimetableMutation = useMutation({
     mutationFn: (payload: any) =>
-      apiFetch("/api/timetable", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
+      api.post('/api/timetable', JSON.stringify(payload)).then(res => res.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["timetable", selectedClassId] });
+      queryClient.invalidateQueries({
+        queryKey: ['timetable', selectedClassId],
+      });
       setIsModalOpen(false);
-      setClassId("");
-      setSubjectId("");
-      setTeacherId("");
-      setDayOfWeek("1");
-      setStartTime("");
-      setEndTime("");
-      setRoom("");
-      setSubmitError("");
-      setSuccessMessage("Timetable entry added successfully.");
-      setTimeout(() => setSuccessMessage(""), 5000);
+      setClassId('');
+      setSubjectId('');
+      setTeacherId('');
+      setDayOfWeek('1');
+      setStartTime('');
+      setEndTime('');
+      setRoom('');
+      setSubmitError('');
+      setSuccessMessage('Timetable entry added successfully.');
+      setTimeout(() => setSuccessMessage(''), 5000);
     },
     onError: (err: any) => {
-      setSubmitError(err.message || "Failed to add timetable entry.");
+      setSubmitError(err.message || 'Failed to add timetable entry.');
     },
   });
 
   const deleteTimetableMutation = useMutation({
     mutationFn: (id: string) =>
-      apiFetch(`/api/timetable/${id}`, {
-        method: "DELETE",
-      }),
+      api.delete(`/api/timetable/${id}`).then(res => res.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["timetable", selectedClassId] });
-      setSuccessMessage("Timetable entry deleted successfully.");
-      setTimeout(() => setSuccessMessage(""), 5000);
+      queryClient.invalidateQueries({
+        queryKey: ['timetable', selectedClassId],
+      });
+      setSuccessMessage('Timetable entry deleted successfully.');
+      setTimeout(() => setSuccessMessage(''), 5000);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!classId || !subjectId || !dayOfWeek || !startTime || !endTime) {
-      setSubmitError("Please fill out all required fields.");
+      setSubmitError('Please fill out all required fields.');
       return;
     }
     createTimetableMutation.mutate({
@@ -159,7 +181,7 @@ export default function TimetablePage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this timetable entry?")) {
+    if (confirm('Are you sure you want to delete this timetable entry?')) {
       deleteTimetableMutation.mutate(id);
     }
   };
@@ -173,11 +195,15 @@ export default function TimetablePage() {
         <div className="text-left">
           <h1 className="text-3xl font-bold tracking-tight">Class Timetable</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Configure weekly lecture timings, map subject rooms, and schedule faculty periods.
+            Configure weekly lecture timings, map subject rooms, and schedule
+            faculty periods.
           </p>
         </div>
         {isManager && (
-          <Button onClick={() => setIsModalOpen(true)} className="cursor-pointer">
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            className="cursor-pointer"
+          >
             <Plus className="size-4 mr-2" />
             Add Entry
           </Button>
@@ -195,7 +221,10 @@ export default function TimetablePage() {
       <Card className="border-border bg-card">
         <CardContent className="p-6">
           <div className="max-w-xs text-left space-y-2">
-            <label htmlFor="filterClass" className="text-sm font-semibold text-foreground">
+            <label
+              htmlFor="filterClass"
+              className="text-sm font-semibold text-foreground"
+            >
               Select Class to View Timetable
             </label>
             {isClassesLoading ? (
@@ -204,11 +233,11 @@ export default function TimetablePage() {
               <select
                 id="filterClass"
                 value={selectedClassId}
-                onChange={(e) => setSelectedClassId(e.target.value)}
+                onChange={e => setSelectedClassId(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               >
                 <option value="">All Timetable Classes</option>
-                {classesData.map((c) => (
+                {classesData.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.name} - {c.section}
                   </option>
@@ -231,21 +260,26 @@ export default function TimetablePage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
             <Calendar className="size-6" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground">Timetable Planner Empty</h3>
+          <h3 className="font-semibold text-lg text-foreground">
+            Timetable Planner Empty
+          </h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm text-center">
-            No schedule entries mapped yet. Choose a class or add a timetable entry to start.
+            No schedule entries mapped yet. Choose a class or add a timetable
+            entry to start.
           </p>
         </Card>
       ) : (
         <div className="grid gap-6">
-          {DAYS_OF_WEEK.map((day) => {
-            const dayEntries = entries.filter((e) => e.dayOfWeek === day.value);
+          {DAYS_OF_WEEK.map(day => {
+            const dayEntries = entries.filter(e => e.dayOfWeek === day.value);
             if (dayEntries.length === 0 && selectedClassId) return null; // hide empty days when filtering by specific class
 
             return (
               <Card key={day.value} className="border-border bg-card">
                 <CardHeader className="py-4 border-b border-border/40 text-left bg-muted/20">
-                  <CardTitle className="text-base font-bold text-primary">{day.label}</CardTitle>
+                  <CardTitle className="text-base font-bold text-primary">
+                    {day.label}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 text-left">
                   {dayEntries.length === 0 ? (
@@ -254,7 +288,7 @@ export default function TimetablePage() {
                     </div>
                   ) : (
                     <div className="divide-y divide-border/60">
-                      {dayEntries.map((entry) => (
+                      {dayEntries.map(entry => (
                         <div
                           key={entry.id}
                           className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 gap-4 hover:bg-muted/10 transition-colors"
@@ -265,7 +299,8 @@ export default function TimetablePage() {
                                 {entry.startTime} - {entry.endTime}
                               </span>
                               <span className="text-xs text-muted-foreground">
-                                (Class: {entry.schoolClass.name} - {entry.schoolClass.section})
+                                (Class: {entry.schoolClass.name} -{' '}
+                                {entry.schoolClass.section})
                               </span>
                             </div>
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -275,7 +310,7 @@ export default function TimetablePage() {
                               </span>
                               <span className="flex items-center gap-1">
                                 <User className="size-3 text-blue-500" />
-                                {entry.teacher?.name || "No teacher assigned"}
+                                {entry.teacher?.name || 'No teacher assigned'}
                               </span>
                               {entry.room && (
                                 <span className="flex items-center gap-1">
@@ -313,7 +348,9 @@ export default function TimetablePage() {
           <Card className="w-full max-w-md bg-card border-border my-8 animate-in fade-in zoom-in-95 duration-200">
             <CardHeader className="relative text-left pb-4 border-b border-border">
               <CardTitle className="text-xl">Add Timetable Slot</CardTitle>
-              <CardDescription>Assign subject hours and teachers to Classrooms.</CardDescription>
+              <CardDescription>
+                Assign subject hours and teachers to Classrooms.
+              </CardDescription>
               <Button
                 variant="ghost"
                 size="icon"
@@ -334,18 +371,21 @@ export default function TimetablePage() {
                 )}
 
                 <div className="space-y-2">
-                  <label htmlFor="entryClass" className="text-sm font-semibold text-foreground">
+                  <label
+                    htmlFor="entryClass"
+                    className="text-sm font-semibold text-foreground"
+                  >
                     Classroom *
                   </label>
                   <select
                     id="entryClass"
                     value={classId}
-                    onChange={(e) => setClassId(e.target.value)}
+                    onChange={e => setClassId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Select Classroom...</option>
-                    {classesData.map((c) => (
+                    {classesData.map(c => (
                       <option key={c.id} value={c.id}>
                         {c.name} - {c.section}
                       </option>
@@ -354,20 +394,23 @@ export default function TimetablePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="entrySubject" className="text-sm font-semibold text-foreground">
+                  <label
+                    htmlFor="entrySubject"
+                    className="text-sm font-semibold text-foreground"
+                  >
                     Subject *
                   </label>
                   <select
                     id="entrySubject"
                     value={subjectId}
-                    onChange={(e) => setSubjectId(e.target.value)}
+                    onChange={e => setSubjectId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Select Subject...</option>
                     {subjectsData
-                      .filter((s) => !classId || s.classId === classId)
-                      .map((s) => (
+                      .filter(s => !classId || s.classId === classId)
+                      .map(s => (
                         <option key={s.id} value={s.id}>
                           {s.name} ({s.code})
                         </option>
@@ -376,19 +419,22 @@ export default function TimetablePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="entryTeacher" className="text-sm font-semibold text-foreground">
+                  <label
+                    htmlFor="entryTeacher"
+                    className="text-sm font-semibold text-foreground"
+                  >
                     Assigned Teacher (Optional)
                   </label>
                   <select
                     id="entryTeacher"
                     value={teacherId}
-                    onChange={(e) => setTeacherId(e.target.value)}
+                    onChange={e => setTeacherId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="">Select Teacher...</option>
                     {teachers
-                      .filter((t) => t.role === "faculty" || t.role === "teacher")
-                      .map((t) => (
+                      .filter(t => t.role === 'faculty' || t.role === 'teacher')
+                      .map(t => (
                         <option key={t.id} value={t.id}>
                           {t.name}
                         </option>
@@ -398,17 +444,20 @@ export default function TimetablePage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="entryDay" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="entryDay"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       Day of Week *
                     </label>
                     <select
                       id="entryDay"
                       value={dayOfWeek}
-                      onChange={(e) => setDayOfWeek(e.target.value)}
+                      onChange={e => setDayOfWeek(e.target.value)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       required
                     >
-                      {DAYS_OF_WEEK.map((d) => (
+                      {DAYS_OF_WEEK.map(d => (
                         <option key={d.value} value={d.value}>
                           {d.label}
                         </option>
@@ -417,41 +466,50 @@ export default function TimetablePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="entryRoom" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="entryRoom"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       Room (Optional)
                     </label>
                     <Input
                       id="entryRoom"
                       placeholder="e.g. Lab B, R304"
                       value={room}
-                      onChange={(e) => setRoom(e.target.value)}
+                      onChange={e => setRoom(e.target.value)}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="entryStart" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="entryStart"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       Start Time *
                     </label>
                     <Input
                       id="entryStart"
                       type="time"
                       value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
+                      onChange={e => setStartTime(e.target.value)}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="entryEnd" className="text-sm font-semibold text-foreground">
+                    <label
+                      htmlFor="entryEnd"
+                      className="text-sm font-semibold text-foreground"
+                    >
                       End Time *
                     </label>
                     <Input
                       id="entryEnd"
                       type="time"
                       value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
+                      onChange={e => setEndTime(e.target.value)}
                       required
                     />
                   </div>
@@ -459,17 +517,24 @@ export default function TimetablePage() {
               </CardContent>
 
               <div className="flex justify-end gap-3 p-6 border-t border-border">
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsModalOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createTimetableMutation.isPending}>
+                <Button
+                  type="submit"
+                  disabled={createTimetableMutation.isPending}
+                >
                   {createTimetableMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Saving...
                     </>
                   ) : (
-                    "Save Entry"
+                    'Save Entry'
                   )}
                 </Button>
               </div>

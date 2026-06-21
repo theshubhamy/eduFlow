@@ -1,49 +1,86 @@
+import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
+
 export class ApiError extends Error {
-  status: number;
-  constructor(message: string, status: number) {
+  status: number | null;
+  data: unknown | null;
+
+  constructor(
+    message: string,
+    status: number | null = null,
+    data: unknown = null,
+  ) {
     super(message);
-    this.name = "ApiError";
+    this.name = 'ApiError';
     this.status = status;
+    this.data = data;
   }
 }
 
-export async function apiFetch<T = any>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  // Ensure endpoints lead with a slash
-  const url = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+// For cookie-based authentication, always send credentials on cross-site requests.
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
+  headers: {
+    Accept: 'application/json',
+  },
+  withCredentials: true,
+});
 
-  const headers = new Headers(options.headers || {});
-  if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
+api.interceptors.request.use(config => {
+  if (
+    config.data !== undefined &&
+    config.data !== null &&
+    typeof config.data === 'object' &&
+    !(config.data instanceof FormData) &&
+    config.headers &&
+    !('Content-Type' in config.headers)
+  ) {
+    config.headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: "include", // Ensure session cookies are sent with requests
-  });
+  return config;
+});
 
-  if (!response.ok) {
-    let errorMessage = "An unexpected error occurred.";
-    try {
-      const data = await response.json();
-      errorMessage = data.error || data.message || errorMessage;
-    } catch {
-      try {
-        errorMessage = await response.text();
-      } catch {
-        // Fallback if reading fails
-      }
+api.interceptors.response.use(
+  response => response,
+  (error: AxiosError) => {
+    if (error.response) {
+      const status = error.response.status;
+      const data = error.response.data;
+      const message =
+        data && typeof data === 'object' && 'message' in data
+          ? String((data as any).message)
+          : error.message;
+      return Promise.reject(new ApiError(message, status, data));
     }
-    throw new ApiError(errorMessage, response.status);
-  }
 
-  const contentType = response.headers.get("Content-Type") || response.headers.get("content-type");
-  if (contentType && contentType.includes("application/json")) {
-    return response.json() as Promise<T>;
-  }
+    return Promise.reject(new ApiError(error.message, null, null));
+  },
+);
 
-  return {} as T;
+export type ApiFetchOptions = Omit<RequestInit, 'body'> & {
+  body?: unknown;
+};
+
+/**
+ * Wrapper around axios instance for convenient API calls.
+ * Automatically extracts response data and handles errors consistently.
+ */
+export async function apiFetch<T = unknown>(
+  url: string,
+  options?: ApiFetchOptions,
+): Promise<T> {
+  const { method = 'GET', headers, body, ...rest } = options ?? {};
+
+  const config: AxiosRequestConfig = {
+    url,
+    method: method.toLowerCase() as AxiosRequestConfig['method'],
+    headers,
+    data: body,
+    ...rest,
+  };
+
+  const response = await api.request<T>(config);
+  return response.data;
 }
+
+export default api;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import api from '@/lib/api';
 import {
   CreditCard,
   Plus,
@@ -77,20 +77,20 @@ export default function FeesPage() {
     error,
   } = useQuery<FeesResponse>({
     queryKey: ["fees"],
-    queryFn: () => apiFetch("/api/fees"),
+    queryFn: () => api.get("/api/fees").then(res => res.data),
   });
 
   // Fetch classes for allocation dropdown
   const { data: classes = [] } = useQuery<any[]>({
     queryKey: ["classes"],
-    queryFn: () => apiFetch("/api/classes"),
+    queryFn: () => api.get("/api/classes").then(res => res.data),
     enabled: isAllocModalOpen,
   });
 
   // Fetch students for allocation dropdown
   const { data: studentsResponse } = useQuery<any>({
     queryKey: ["studentsListForAllocation"],
-    queryFn: () => apiFetch("/api/students?limit=100"),
+    queryFn: () => api.get("/api/students?limit=100").then(res => res.data),
     enabled: isAllocModalOpen && allocTargetType === "student",
   });
 
@@ -101,10 +101,7 @@ export default function FeesPage() {
       periodicity: string;
       description?: string;
     }) =>
-      apiFetch("/api/fees/category", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
+      api.post("/api/fees/category", JSON.stringify(payload),).then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fees"] });
       setIsCatModalOpen(false);
@@ -121,10 +118,7 @@ export default function FeesPage() {
 
   const allocateFeeMutation = useMutation({
     mutationFn: (payload: any) =>
-      apiFetch("/api/fees/allocate", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
+      api.post("/api/fees/allocate", JSON.stringify(payload),).then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fees"] });
       setIsAllocModalOpen(false);

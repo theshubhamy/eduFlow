@@ -1,27 +1,27 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash('password', 10);
-  
+  const passwordHash = await bcrypt.hash("password", 10);
+
   // 1. Create School
   const school = await prisma.school.create({
     data: {
-      name: 'Springfield Academy',
-      address: '742 Evergreen Terrace, Springfield',
-      phone: '555-0199',
-      email: 'info@springfieldacademy.edu',
-      website: 'www.springfieldacademy.edu',
+      name: "Springfield Academy",
+      address: "742 Evergreen Terrace, Springfield",
+      phone: "555-0199",
+      email: "info@springfieldacademy.edu",
+      website: "www.springfieldacademy.edu",
     },
   });
 
   // 2. Create Team
   const team = await prisma.team.create({
     data: {
-      name: 'Springfield Admin Team',
-      slug: 'springfield-admin-team',
+      name: "Springfield Admin Team",
+      slug: "springfield-admin-team",
       isPersonal: false,
     },
   });
@@ -29,10 +29,10 @@ async function main() {
   // 3. Create User (Owner)
   const user = await prisma.user.create({
     data: {
-      name: 'Admin User',
-      email: 'admin@example.com',
+      name: "Admin User",
+      email: "admin@example.com",
       password: passwordHash,
-      role: 'admin',
+      role: "admin",
       schoolId: school.id,
       currentTeamId: team.id,
     },
@@ -43,7 +43,7 @@ async function main() {
     data: {
       teamId: team.id,
       userId: user.id,
-      role: 'owner',
+      role: "owner",
     },
   });
 
@@ -51,28 +51,28 @@ async function main() {
   const classA = await prisma.schoolClass.create({
     data: {
       schoolId: school.id,
-      name: 'Class 10',
-      section: 'A',
-      roomNumber: '101',
+      name: "Class 10",
+      section: "A",
+      roomNumber: "101",
     },
   });
 
   const classB = await prisma.schoolClass.create({
     data: {
       schoolId: school.id,
-      name: 'Class 10',
-      section: 'B',
-      roomNumber: '102',
+      name: "Class 10",
+      section: "B",
+      roomNumber: "102",
     },
   });
 
   // 6. Create some Teachers (Users)
   const teacherUser = await prisma.user.create({
     data: {
-      name: 'John Doe',
-      email: 'john.doe@example.com',
+      name: "John Doe",
+      email: "john.doe@example.com",
       password: passwordHash,
-      role: 'teacher',
+      role: "teacher",
       schoolId: school.id,
       currentTeamId: team.id,
     },
@@ -82,7 +82,7 @@ async function main() {
     data: {
       teamId: team.id,
       userId: teacherUser.id,
-      role: 'faculty',
+      role: "faculty",
     },
   });
 
@@ -92,8 +92,8 @@ async function main() {
       schoolId: school.id,
       classId: classA.id,
       teacherId: teacherUser.id,
-      name: 'Mathematics',
-      code: 'MATH-101',
+      name: "Mathematics",
+      code: "MATH-101",
     },
   });
 
@@ -102,12 +102,12 @@ async function main() {
       schoolId: school.id,
       classId: classA.id,
       teacherId: teacherUser.id,
-      name: 'Science',
-      code: 'SCI-101',
+      name: "Science",
+      code: "SCI-101",
     },
   });
 
-  console.log('Database seeded successfully!');
+  console.log("Database seeded successfully!");
 }
 
 main()

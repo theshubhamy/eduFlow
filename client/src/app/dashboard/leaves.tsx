@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import api from '@/lib/api';
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Plus,
@@ -62,7 +62,7 @@ export default function LeavesPage() {
 
   const { data, isLoading, error } = useQuery<LeavesResponse>({
     queryKey: ["leaves"],
-    queryFn: () => apiFetch("/api/leaves"),
+    queryFn: () => api.get("/api/leaves").then(res => res.data),
   });
 
   const applyLeaveMutation = useMutation({
@@ -72,10 +72,7 @@ export default function LeavesPage() {
       endDate: string;
       reason: string;
     }) =>
-      apiFetch("/api/leaves", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
+      api.post("/api/leaves", JSON.stringify(payload),).then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leaves"] });
       setIsModalOpen(false);
@@ -97,10 +94,7 @@ export default function LeavesPage() {
       leaveId: string;
       status: "approved" | "rejected";
     }) =>
-      apiFetch("/api/leaves/approve", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
+      api.post("/api/leaves/approve", JSON.stringify(payload),).then(res => res.data),
     onSuccess: (resData: any) => {
       queryClient.invalidateQueries({ queryKey: ["leaves"] });
       setSuccessMessage(resData.message || "Leave request status updated.");

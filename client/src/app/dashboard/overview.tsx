@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import api from '@/lib/api';
 import {
   Users,
   School,
@@ -36,7 +36,7 @@ interface DashboardData {
 export default function DashboardOverview() {
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["dashboardStats"],
-    queryFn: () => apiFetch("/api/dashboard"),
+    queryFn: () => api.get("/api/dashboard").then(res => res.data),
   });
 
   if (isLoading) {

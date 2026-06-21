@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import api from '@/lib/api';
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Megaphone,
@@ -56,7 +56,7 @@ export default function NoticesPage() {
 
   const { data, isLoading, error } = useQuery<NoticesResponse>({
     queryKey: ["notices"],
-    queryFn: () => apiFetch("/api/notices"),
+    queryFn: () => api.get("/api/notices").then(res => res.data),
   });
 
   const createNoticeMutation = useMutation({
@@ -65,10 +65,7 @@ export default function NoticesPage() {
       content: string;
       targetAudience: string;
     }) =>
-      apiFetch("/api/notices", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
+      api.post("/api/notices", JSON.stringify(payload),).then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notices"] });
       setIsModalOpen(false);
