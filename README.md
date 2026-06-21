@@ -1,6 +1,7 @@
 # eduFlow
 
 **eduFlow** is a modern, comprehensive School Management SaaS application. Migrated from Laravel to a high-performance JavaScript/TypeScript stack:
+
 - **Backend**: Node.js, Express.js, TypeScript, Prisma ORM, and PostgreSQL.
 - **Frontend**: React 19 (SPA), Vite, Tailwind CSS v4, and React Router.
 - **Authentication**: JWT & Cookie-based sessions.
@@ -27,7 +28,7 @@ eduFlow/
   │    ├── src/         # API Controllers, Middlewares, and Router
   │    └── package.json
   └── frontend/         # Vite + React SPA Client
-       ├── src/         # React Components, Pages, Layouts, and Inertia Shim
+       ├── src/         # React Components, Pages, Layouts
        └── package.json
 ```
 
@@ -36,6 +37,7 @@ eduFlow/
 ## ⚙️ Setup & Installation
 
 ### 1. Prerequisites
+
 - Node.js (v20+)
 - PostgreSQL running locally
 
@@ -44,12 +46,14 @@ eduFlow/
 ### 2. Backend Setup
 
 1. **Navigate to the backend directory**:
+
    ```bash
    cd backend
    ```
 
 2. **Configure Environment Variables**:
    Create a `.env` file based on `.env` template:
+
    ```env
    PORT=5000
    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/eduflow?schema=public"
@@ -57,11 +61,13 @@ eduFlow/
    ```
 
 3. **Install Dependencies**:
+
    ```bash
    npm install
    ```
 
 4. **Run Database Migrations & Seed**:
+
    ```bash
    npx prisma migrate dev --name init
    npm run db:seed
@@ -78,11 +84,13 @@ eduFlow/
 ### 3. Frontend Setup
 
 1. **Navigate to the frontend directory**:
+
    ```bash
    cd ../frontend
    ```
 
 2. **Install Dependencies**:
+
    ```bash
    npm install
    ```
@@ -98,5 +106,6 @@ eduFlow/
 ## 💻 Default Credentials
 
 To log in after database seeding, use the following administrator account:
+
 - **Email**: `admin@example.com`
 - **Password**: `password`
